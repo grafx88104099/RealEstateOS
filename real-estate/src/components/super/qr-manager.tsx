@@ -12,9 +12,11 @@ type QrLink = {
 
 export default function QRManager({ link }: { link: QrLink }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<string>("");
   const [targetUrl, setTargetUrl] = useState(link.target_url);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [svgPreview, setSvgPreview] = useState("");
 
   const qrUrl = `${link.base_url}/go/${link.slug}`;
 
@@ -26,15 +28,43 @@ export default function QRManager({ link }: { link: QrLink }) {
         color: { dark: "#1a1a1a", light: "#ffffff" },
       });
     }
+    // SVG-г мөн үүсгэж хадгална
+    QRCode.toString(qrUrl, {
+      type: "svg",
+      margin: 2,
+      color: { dark: "#1a1a1a", light: "#ffffff" },
+      width: 1000,
+    }).then((svg) => {
+      svgRef.current = svg;
+      setSvgPreview(svg);
+    });
   }, [qrUrl]);
 
-  function handleDownload() {
+  function handleDownloadPng() {
     if (!canvasRef.current) return;
-    const url = canvasRef.current.toDataURL("image/png");
+    // Өндөр чанартай PNG (2000x2000)
+    QRCode.toCanvas(document.createElement("canvas"), qrUrl, {
+      width: 2000,
+      margin: 2,
+      color: { dark: "#1a1a1a", light: "#ffffff" },
+    }).then((hiResCanvas) => {
+      const url = hiResCanvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `qr-${link.slug}.png`;
+      a.click();
+    });
+  }
+
+  function handleDownloadSvg() {
+    if (!svgRef.current) return;
+    const blob = new Blob([svgRef.current], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `qr-${link.slug}.png`;
+    a.download = `qr-${link.slug}.svg`;
     a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function handleSave() {
@@ -62,12 +92,20 @@ export default function QRManager({ link }: { link: QrLink }) {
           <div className="border border-gray-100 rounded-xl p-2 bg-white">
             <canvas ref={canvasRef} />
           </div>
-          <button
-            onClick={handleDownload}
-            className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-          >
-            PNG татах
-          </button>
+          <div className="flex gap-2 w-full">
+            <button
+              onClick={handleDownloadSvg}
+              className="flex-1 px-3 py-2 bg-gray-900 text-white rounded-lg text-xs font-medium hover:bg-gray-800 transition-colors"
+            >
+              SVG татах
+            </button>
+            <button
+              onClick={handleDownloadPng}
+              className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
+            >
+              PNG татах
+            </button>
+          </div>
         </div>
 
         {/* Settings */}
