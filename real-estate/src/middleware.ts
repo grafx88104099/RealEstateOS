@@ -12,6 +12,7 @@ const ROUTE_ROLES: Record<string, AllowedRole[]> = {
 
 export async function middleware(req: NextRequest) {
   let response = NextResponse.next({ request: req });
+  response.headers.set("x-next-pathname", req.nextUrl.pathname);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,6 +35,14 @@ export async function middleware(req: NextRequest) {
 
   const role = session ? getRoleFromJWT(session.access_token) : null;
 
+  // Super admin login хуудсыг хамгаалалтгүй болгох
+  if (pathname === "/super/login") {
+    if (role === "super_admin") {
+      return NextResponse.redirect(new URL("/super", req.url));
+    }
+    return response;
+  }
+
   // Нэвтэрсэн хэрэглэгчийг login/register/agent-portal-с role-ийн dashboard руу
   if (pathname === "/login" || pathname.startsWith("/register") || pathname === "/agent-portal") {
     if (role) {
@@ -46,7 +55,8 @@ export async function middleware(req: NextRequest) {
   for (const [prefix, allowed] of Object.entries(ROUTE_ROLES)) {
     if (pathname.startsWith(prefix)) {
       if (!session) {
-        return NextResponse.redirect(new URL("/login", req.url));
+        const loginUrl = prefix === "/super" ? "/super/login" : "/login";
+        return NextResponse.redirect(new URL(loginUrl, req.url));
       }
       if (!role || !allowed.includes(role)) {
         const home = role ? ROLE_HOME[role] : "/login";
