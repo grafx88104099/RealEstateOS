@@ -41,13 +41,13 @@ export default function QRManager({ link }: { link: QrLink }) {
   }, [qrUrl]);
 
   function handleDownloadPng() {
-    if (!canvasRef.current) return;
     // Өндөр чанартай PNG (2000x2000)
-    QRCode.toCanvas(document.createElement("canvas"), qrUrl, {
+    const hiResCanvas = document.createElement("canvas");
+    QRCode.toCanvas(hiResCanvas, qrUrl, {
       width: 2000,
       margin: 2,
       color: { dark: "#1a1a1a", light: "#ffffff" },
-    }).then((hiResCanvas) => {
+    }).then(() => {
       const url = hiResCanvas.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = url;
