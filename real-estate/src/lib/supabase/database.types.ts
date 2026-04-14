@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       buyer_preferences: {
@@ -404,6 +379,33 @@ export type Database = {
           },
         ]
       }
+      qr_links: {
+        Row: {
+          created_at: string
+          id: string
+          scan_count: number
+          slug: string
+          target_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          scan_count?: number
+          slug: string
+          target_url: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          scan_count?: number
+          slug?: string
+          target_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scraped_listings: {
         Row: {
           address: string | null
@@ -673,6 +675,69 @@ export type Database = {
           proj4text?: string | null
           srid?: number
           srtext?: string | null
+        }
+        Relationships: []
+      }
+      survey_responses: {
+        Row: {
+          budget: string | null
+          contact_method: string[]
+          contact_time: string | null
+          created_at: string
+          email: string | null
+          financing: string | null
+          first_name: string
+          hear_about: string[]
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          prev_property: string | null
+          property_location: string[]
+          property_purpose: string[]
+          property_type: string[]
+          urgency: string | null
+          us_state: string | null
+        }
+        Insert: {
+          budget?: string | null
+          contact_method?: string[]
+          contact_time?: string | null
+          created_at?: string
+          email?: string | null
+          financing?: string | null
+          first_name: string
+          hear_about?: string[]
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          prev_property?: string | null
+          property_location?: string[]
+          property_purpose?: string[]
+          property_type?: string[]
+          urgency?: string | null
+          us_state?: string | null
+        }
+        Update: {
+          budget?: string | null
+          contact_method?: string[]
+          contact_time?: string | null
+          created_at?: string
+          email?: string | null
+          financing?: string | null
+          first_name?: string
+          hear_about?: string[]
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          prev_property?: string | null
+          property_location?: string[]
+          property_purpose?: string[]
+          property_type?: string[]
+          urgency?: string | null
+          us_state?: string | null
         }
         Relationships: []
       }
@@ -1080,6 +1145,7 @@ export type Database = {
       get_user_role: { Args: never; Returns: string }
       gettransactionid: { Args: never; Returns: unknown }
       has_role: { Args: { allowed_roles: string[] }; Returns: boolean }
+      increment_scan_count: { Args: { link_id: string }; Returns: undefined }
       is_super_admin: { Args: never; Returns: boolean }
       is_tenant_member: { Args: { check_tenant_id: string }; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
@@ -1989,9 +2055,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       inquiry_status: [
