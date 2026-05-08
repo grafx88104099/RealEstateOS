@@ -274,6 +274,36 @@ export default function HomeClient({
         />
       )}
 
+      {/* ── AI Prompt Hero Bar (always visible at top) ─────────── */}
+      <div className="flex-shrink-0 border-b border-gray-200/70 bg-gradient-to-br from-indigo-50/40 via-white to-violet-50/40">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4">
+          <button
+            onClick={() => setShowAiPanel(true)}
+            className="group w-full flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all text-left"
+          >
+            <span className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-sm">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 2L8 6 4 7l3 3-1 5 4-2 4 2-1-5 3-3-4-1z" />
+              </svg>
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[14px] font-semibold text-gray-900">
+                AI Зуучлагчтай ярих
+              </span>
+              <span className="block text-[12.5px] text-gray-500 truncate">
+                Жишээ: «БЗД, 2 өрөө, 300 саяас доош, метро ойр»
+              </span>
+            </span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full group-hover:bg-indigo-100 transition-colors">
+              Эхлэх
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+
       {/* ── Main: Grid (left) + Map (right) — Airbnb-style ─────── */}
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: listing grid */}
@@ -344,8 +374,8 @@ export default function HomeClient({
         )}
       </div>
 
-      {/* AI Chat: floating panel */}
-      {showAiPanel ? (
+      {/* AI Chat: floating panel (opens when user taps the hero bar) */}
+      {showAiPanel && (
         <div className="fixed bottom-6 right-6 z-40 w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-7rem)] bg-white rounded-2xl shadow-2xl shadow-indigo-500/20 ring-1 ring-gray-200 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-violet-50">
             <div className="flex items-center gap-2">
@@ -377,19 +407,6 @@ export default function HomeClient({
             />
           </div>
         </div>
-      ) : (
-        <button
-          onClick={() => setShowAiPanel(true)}
-          aria-label="AI Зуучлагч"
-          className="fixed bottom-6 right-6 z-40 group flex items-center gap-2.5 pl-3 pr-5 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-full shadow-xl shadow-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/40 transition-all hover:-translate-y-0.5"
-        >
-          <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 2L8 6 4 7l3 3-1 5 4-2 4 2-1-5 3-3-4-1z" />
-            </svg>
-          </span>
-          <span className="text-[13px] font-semibold">AI Зуучлагч</span>
-        </button>
       )}
     </div>
   );
