@@ -250,11 +250,16 @@ async function runJob(payload) {
             last_seen_at: new Date().toISOString(),
           };
 
-          const { data: inserted } = await supabase
+          const { data: inserted, error: insErr } = await supabase
             .from("scraped_listings")
             .upsert(merged, { onConflict: "source_site,source_ext_id" })
             .select("id")
             .single();
+          if (insErr) {
+            console.error(`[insert error] ${link.extId}:`, insErr.message, insErr.code);
+            errors.push(`insert:${insErr.code ?? "x"}:${(insErr.message ?? "").slice(0, 60)}`);
+            continue;
+          }
           if (inserted?.id) newScrapedIds.push(inserted.id);
           listingsNew++;
           existingIds.add(link.extId);
