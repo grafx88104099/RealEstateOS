@@ -17,6 +17,7 @@ export interface ParsedListing {
   listing_type: string;
   contact_phone: string | null;
   confidence: number;
+  tokens?: { input: number; output: number };
 }
 
 const SYSTEM_PROMPT = `Та Монгол хэлний үл хөдлөх хөрөнгийн зарын текст задлагч AI юм.
@@ -74,6 +75,10 @@ export async function parseListingWithAI(rawText: string): Promise<ParsedListing
     if (!content) return null;
 
     const parsed = JSON.parse(content) as ParsedListing;
+    parsed.tokens = {
+      input: data.usage?.prompt_tokens ?? 0,
+      output: data.usage?.completion_tokens ?? 0,
+    };
     return parsed;
   } catch {
     return null;

@@ -6,6 +6,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { parseUneguiDetailHTML, extractListingLinks, extractFieldsFromText } from "./unegui";
 import { parseListingWithAI } from "./ai-parser";
 import { fetchWithBrowser } from "./browser";
+import { isAllowed } from "./robots";
+import { emptyUsage, addParser, type TokenUsage } from "./cost";
 import { SITE_CONFIGS, SCAN_MODES, randomDelay, buildPageUrl, type ScanMode, type SiteConfig } from "./site-configs";
 
 export interface ScanResult {
@@ -20,6 +22,7 @@ export interface ScanResult {
   startedAt: string;
   finishedAt: string;
   durationMs: number;
+  usage: TokenUsage;
 }
 
 // ─── Main scan function ─────────────────────────────────────
@@ -39,6 +42,7 @@ export async function runScan(
   let listingsFound = 0;
   let listingsNew = 0;
   let listingsUpdated = 0;
+  const usage: TokenUsage = emptyUsage();
 
   // Create run log
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,7 +118,11 @@ export async function runScan(
               // AI parse (only for new listings to save cost)
               let aiParsed = null;
               if (!isExisting) {
-                aiParsed = await parseListingWithAI(raw.raw_text);
+                const parsed = await parseListingWithAI(raw.raw_text);
+                aiParsed = parsed;
+                if (parsed?.tokens) {
+                  addParser(usage, parsed.tokens.input, parsed.tokens.output);
+                }
               }
               const regexFields = extractFieldsFromText(raw.raw_text);
 
@@ -220,6 +228,7 @@ export async function runScan(
       listings_updated: listingsUpdated,
       errors: errors.slice(0, 20),
       finished_at: finishedAt,
+      token_usage: usage,
     })
     .eq("id", runId);
 
@@ -235,11 +244,15 @@ export async function runScan(
     startedAt,
     finishedAt,
     durationMs,
+    usage,
   };
 }
 
-// ─── Fetch with Playwright (Cloudflare bypass) ─────────────
+// ─── Fetch with Playwright (Cloudflare bypass) + robots.txt honor ─────────────
 async function fetchPage(url: string, config: SiteConfig): Promise<string | null> {
+  if (!(await isAllowed(url))) {
+    return null;
+  }
   if (config.requiresBrowser) {
     return fetchWithBrowser(url, config.cloudflareWaitMs);
   }

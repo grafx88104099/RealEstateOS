@@ -39,17 +39,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Энэ имэйл хаяг бүртгэлтэй байна" }, { status: 409 });
   }
 
-  // Auth user үүсгэх
-  const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
-    email: String(email),
-    password: String(password),
-    email_confirm: true,
-    user_metadata: { full_name: String(full_name) },
-  });
+  // Auth user үүсгэх. Хэрэв өмнө supabase.auth.signUp-ээр үүссэн боловч public.users
+  // row үүсээгүй "stuck" хэрэглэгч байвал тэрхүү auth row-ыг устгаад дахин үүсгэнэ.
+  let userId: string;
+  {
+    const { data: authData, error: authErr } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: String(email),
+        password: String(password),
+        email_confirm: true,
+        user_metadata: { full_name: String(full_name) },
+      });
 
-  if (authErr) return NextResponse.json({ error: authErr.message }, { status: 500 });
+    if (authErr) {
+      const msg = authErr.message?.toLowerCase() ?? "";
+      const looksLikeDuplicate =
+        msg.includes("already") ||
+        msg.includes("registered") ||
+        msg.includes("exists");
 
-  const userId = authData.user.id;
+      if (!looksLikeDuplicate) {
+        return NextResponse.json({ error: authErr.message }, { status: 500 });
+      }
+
+      // Stuck auth user-ийг олж устгаад дахин үүсгэнэ
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 200,
+      });
+      const stuck = list?.users.find(
+        (u) => u.email?.toLowerCase() === String(email).toLowerCase(),
+      );
+      if (!stuck) {
+        return NextResponse.json({ error: authErr.message }, { status: 500 });
+      }
+      await supabaseAdmin.auth.admin.deleteUser(stuck.id);
+
+      const retry = await supabaseAdmin.auth.admin.createUser({
+        email: String(email),
+        password: String(password),
+        email_confirm: true,
+        user_metadata: { full_name: String(full_name) },
+      });
+      if (retry.error || !retry.data.user) {
+        return NextResponse.json(
+          { error: retry.error?.message ?? "Auth user retry failed" },
+          { status: 500 },
+        );
+      }
+      userId = retry.data.user.id;
+    } else {
+      userId = authData.user.id;
+    }
+  }
 
   if (mode === "consumer") {
     // Platform tenant-д consumer role

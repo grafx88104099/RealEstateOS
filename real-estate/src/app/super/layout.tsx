@@ -39,6 +39,12 @@ export default async function SuperAdminLayout({ children }: { children: React.R
           <Link href="/super/users" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
             Хэрэглэгчид
           </Link>
+          <Link href="/super/public-listings" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+            Нийтийн зарууд
+          </Link>
+          <Link href="/super/scraper" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+            AI Scraper
+          </Link>
           <Link href="/super/usa-survey" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
             USAsurvey
           </Link>
