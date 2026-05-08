@@ -374,9 +374,10 @@ export default function HomeClient({
         )}
       </div>
 
-      {/* AI Chat: floating panel (opens when user taps the hero bar) */}
+      {/* AI Chat: floating panel (opens when user taps the hero bar).
+          z-[9999] used so it stacks above Leaflet panes (which sit at z-400+). */}
       {showAiPanel && (
-        <div className="fixed bottom-6 right-6 z-40 w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-7rem)] bg-white rounded-2xl shadow-2xl shadow-indigo-500/20 ring-1 ring-gray-200 overflow-hidden flex flex-col">
+        <div className="fixed bottom-6 right-6 z-[9999] w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-7rem)] bg-white rounded-2xl shadow-2xl shadow-indigo-500/20 ring-1 ring-gray-200 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-violet-50">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold">
