@@ -266,11 +266,16 @@ async function dispatchToWorker(
     }
 
     try {
+      // Fire-and-forget: 3s timeout for the dispatch handshake. The worker
+      // returns 202 immediately and runs the scrape async, so we don't need
+      // to keep the Vercel function alive while it works (Hobby plan caps
+      // function execution at 10s; QStash treats anything past that as a
+      // retry-worthy timeout).
       const res = await fetch(`${workerUrl.replace(/\/$/, "")}/run`, {
         method: "POST",
         headers,
         body: payload,
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(3_000),
       });
       if (res.ok || res.status === 202) {
         dispatched++;
@@ -281,7 +286,15 @@ async function dispatchToWorker(
           .eq("status", "queued");
       }
     } catch (err) {
-      console.error("worker dispatch failed:", err);
+      // Treat dispatch timeout as success — the worker likely received the
+      // request even if our connection dropped. The job row stays as
+      // 'queued' which lets a future retry pick it up if not.
+      const msg = String(err);
+      if (msg.includes("aborted") || msg.includes("timeout")) {
+        dispatched++;
+      } else {
+        console.error("worker dispatch failed:", err);
+      }
     }
   }
   return dispatched;
