@@ -43,6 +43,21 @@ export interface IngestStats {
 
 const PLATFORM_TENANT_ID = "00000000-0000-0000-0000-000000000001";
 
+// Resolve the system user that auto-imported listings will be attributed to.
+// listings.agent_id is NOT NULL, so we need a real user. Picks the first
+// super_admin/tenant_admin/agent in the target tenant.
+async function resolveSystemAgentId(tenantId: string): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from("users")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .in("role", ["super_admin", "tenant_admin", "agent"])
+    .order("role", { ascending: true })
+    .limit(1)
+    .single();
+  return (data as { id: string } | null)?.id ?? null;
+}
+
 export async function ingestNewScraped(
   source: SourceConfig,
   scrapedRowIds: string[],
@@ -84,6 +99,14 @@ export async function ingestNewScraped(
 
   const list = (rows as Row[] | null) ?? [];
   const tenantId = source.target_tenant_id ?? PLATFORM_TENANT_ID;
+  const systemAgentId = await resolveSystemAgentId(tenantId);
+  if (!systemAgentId) {
+    return {
+      ...stats,
+      blocked: { no_system_agent: list.length },
+      considered: list.length,
+    };
+  }
 
   for (const r of list) {
     stats.considered++;
@@ -174,6 +197,7 @@ export async function ingestNewScraped(
       .from("listings")
       .insert({
         tenant_id: tenantId,
+        agent_id: systemAgentId,
         title: r.title,
         slug,
         description: r.description,
