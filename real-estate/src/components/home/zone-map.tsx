@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { UB_CENTER } from "@/lib/constants/districts";
+import { loadGoogleMaps } from "@/lib/google-maps-loader";
 
 export interface SelectedZone {
   circle: { center: [number, number]; radiusKm: number };
@@ -21,12 +22,12 @@ interface ZoneMapProps {
 const ZoneMap = forwardRef<ZoneMapHandle, ZoneMapProps>(({ radiusKm, onZoneChange }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef({
-    map: null as import("leaflet").Map | null,
-    L: null as typeof import("leaflet") | null,
-    circleLayer: null as import("leaflet").Circle | null,
-    centerMarker: null as import("leaflet").Marker | null,
+    map: null as google.maps.Map | null,
+    circleLayer: null as google.maps.Circle | null,
+    centerMarker: null as google.maps.marker.AdvancedMarkerElement | null,
     circleCenter: null as [number, number] | null,
     radiusKm: 2,
+    clickListener: null as google.maps.MapsEventListener | null,
   });
 
   useImperativeHandle(ref, () => ({
@@ -46,65 +47,83 @@ const ZoneMap = forwardRef<ZoneMapHandle, ZoneMapProps>(({ radiusKm, onZoneChang
 
   function clearCircle() {
     const s = stateRef.current;
-    s.circleLayer?.remove(); s.circleLayer = null;
-    s.centerMarker?.remove(); s.centerMarker = null;
+    s.circleLayer?.setMap(null);
+    s.circleLayer = null;
+    if (s.centerMarker) s.centerMarker.map = null;
+    s.centerMarker = null;
     s.circleCenter = null;
   }
 
   useEffect(() => {
+    let cancelled = false;
     if (!containerRef.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((containerRef.current as any)._leaflet_id) return;
 
-    import("leaflet").then((L) => {
-      if (!containerRef.current) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((containerRef.current as any)._leaflet_id) return;
+    loadGoogleMaps()
+      .then((g) => {
+        if (cancelled || !containerRef.current || stateRef.current.map) return;
 
-      const s = stateRef.current;
-      s.L = L;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-      const map = L.map(containerRef.current, { zoomControl: true }).setView(UB_CENTER, 12);
-      s.map = map;
-      map.getContainer().style.cursor = "crosshair";
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap", maxZoom: 19,
-      }).addTo(map);
-
-      map.on("click", (e: import("leaflet").LeafletMouseEvent) => {
-        const center: [number, number] = [e.latlng.lat, e.latlng.lng];
-        s.circleCenter = center;
-
-        s.circleLayer?.remove();
-        s.centerMarker?.remove();
-
-        s.circleLayer = L.circle([center[0], center[1]], {
-          radius: s.radiusKm * 1000,
-          color: "#2563eb", fillColor: "#93c5fd",
-          fillOpacity: 0.25, weight: 2,
-        }).addTo(map);
-
-        s.centerMarker = L.marker([center[0], center[1]], {
-          icon: L.divIcon({
-            className: "",
-            html: `<div style="width:14px;height:14px;background:#2563eb;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>`,
-            iconAnchor: [7, 7],
-          }),
-        }).addTo(map);
-
-        onZoneChange({
-          circle: { center, radiusKm: s.radiusKm },
-          label: `${s.radiusKm}км радиус`,
+        const map = new g.maps.Map(containerRef.current, {
+          center: { lat: UB_CENTER[0], lng: UB_CENTER[1] },
+          zoom: 12,
+          mapId: "DEMO_MAP_ID",
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          clickableIcons: false,
+          draggableCursor: "crosshair",
         });
-      });
-    });
+        stateRef.current.map = map;
+
+        stateRef.current.clickListener = map.addListener(
+          "click",
+          (e: google.maps.MapMouseEvent) => {
+            if (!e.latLng) return;
+            const center: [number, number] = [e.latLng.lat(), e.latLng.lng()];
+            const s = stateRef.current;
+            s.circleCenter = center;
+
+            s.circleLayer?.setMap(null);
+            if (s.centerMarker) s.centerMarker.map = null;
+
+            s.circleLayer = new g.maps.Circle({
+              map,
+              center: { lat: center[0], lng: center[1] },
+              radius: s.radiusKm * 1000,
+              strokeColor: "#2563eb",
+              strokeWeight: 2,
+              fillColor: "#93c5fd",
+              fillOpacity: 0.25,
+              clickable: false,
+            });
+
+            const dot = document.createElement("div");
+            dot.style.cssText =
+              "width:14px;height:14px;background:#2563eb;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.35)";
+            s.centerMarker = new g.maps.marker.AdvancedMarkerElement({
+              map,
+              position: { lat: center[0], lng: center[1] },
+              content: dot,
+            });
+
+            onZoneChange({
+              circle: { center, radiusKm: s.radiusKm },
+              label: `${s.radiusKm}км радиус`,
+            });
+          },
+        );
+      })
+      .catch((err) => console.error("Google Maps load failed:", err));
 
     return () => {
-      stateRef.current.map?.remove();
-      stateRef.current.map = null;
+      cancelled = true;
+      const s = stateRef.current;
+      s.clickListener?.remove();
+      s.clickListener = null;
+      s.circleLayer?.setMap(null);
+      s.circleLayer = null;
+      if (s.centerMarker) s.centerMarker.map = null;
+      s.centerMarker = null;
+      s.map = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

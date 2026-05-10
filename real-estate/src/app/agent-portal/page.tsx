@@ -2,93 +2,77 @@ import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { decodeJWT, ROLE_HOME, AllowedRole } from "@/lib/utils/jwt";
 import AgentPortalLoginForm from "./login-form";
+import WrongSessionNotice from "./wrong-session";
 
 export default async function AgentPortalPage() {
   const supabase = await createSupabaseServer();
   const { data: { session } } = await supabase.auth.getSession();
 
-  // Аль хэдийн нэвтэрсэн бол dashboard руу
+  let isSuperAdmin = false;
   if (session) {
     const payload = decodeJWT(session.access_token);
     const role = payload.user_role as AllowedRole | undefined;
-    const home = (role && ROLE_HOME[role]) ? ROLE_HOME[role] : "/agent";
-    // Server component redirect
-    const { redirect } = await import("next/navigation");
-    redirect(home);
+    if (role === "super_admin") {
+      // super_admin-ыг redirect хийхгүй — энэ хуудсанд нэвтрэх ёсгүй гэдгийг мэдэгдэнэ
+      isSuperAdmin = true;
+    } else if (role && ROLE_HOME[role]) {
+      // tenant_admin / agent / consumer гэх мэт нь өөр өөрийн нүүр рүү
+      const { redirect } = await import("next/navigation");
+      redirect(ROLE_HOME[role]);
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
-
-      {/* Header */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-sm text-gray-400 hover:text-white transition-colors">
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="border-b border-gray-200">
+        <div className="max-w-screen-xl mx-auto px-6 py-3.5 flex items-center gap-4">
+          <Link
+            href="/agents"
+            className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-2xl tracking-tight lowercase leading-none hover:text-indigo-600 transition-colors"
+          >
+            meni
+          </Link>
+          <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-semibold">Pro</span>
+          <div className="flex-1" />
+          <Link
+            href="/"
+            className="text-[13px] text-gray-600 hover:text-gray-900 font-medium px-3 py-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
             ← Нийтийн хуудас
           </Link>
-          <span className="text-gray-700">|</span>
-          <span className="font-bold text-white">Real Estate OS</span>
-          <span className="text-xs bg-white/10 text-gray-300 px-2 py-0.5 rounded font-medium">Pro</span>
         </div>
       </header>
 
-      <div className="flex flex-1">
-
-        {/* Left — branding */}
-        <div className="hidden lg:flex flex-col justify-center px-16 flex-1 bg-gradient-to-br from-gray-900 to-gray-950">
-          <div className="max-w-md">
-            <h1 className="text-3xl font-bold text-white mb-4 leading-snug">
-              Мэргэжлийн агентын<br />
-              <span className="text-blue-400">хяналтын систем</span>
-            </h1>
-            <p className="text-gray-400 text-sm leading-relaxed mb-8">
-              Зар удирдах, хүсэлт хянах, AI хайлт — бүгд нэг дор.
-              Агентлагийн бүх багийг нэг платформд нэгтгэнэ.
-            </p>
-            <div className="space-y-3">
-              {[
-                "AI-д суурилсан семантик хайлт",
-                "Tenant isolation — агентлаг бүр тусдаа орчин",
-                "Хүсэлт удирдах pipeline",
-                "Агент, admin, buyer — бүх role нэг систем",
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-3 text-sm text-gray-400">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                  {item}
-                </div>
-              ))}
-            </div>
+      <main className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Нэвтрэх</h1>
+            <p className="text-sm text-gray-500 mt-2">Оффис болон агентын бүртгэл</p>
           </div>
+
+          {isSuperAdmin ? (
+            <WrongSessionNotice email={session!.user.email ?? ""} superAdminLink="/super" />
+          ) : (
+            <>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
+                <AgentPortalLoginForm />
+              </div>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-500">
+                  Оффис нээж байгаа юу?{" "}
+                  <Link href="/agents/onboard/account" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                    Шинэ оффис нээх
+                  </Link>
+                </p>
+                <p className="text-xs text-gray-400 mt-3">
+                  Агент болохыг хүсвэл оффисоосоо урилга аваарай
+                </p>
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Right — login + register links */}
-        <div className="flex flex-col justify-center items-center px-8 py-12 w-full lg:w-[460px] lg:border-l lg:border-white/10">
-          <div className="w-full max-w-sm">
-
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-white">Нэвтрэх</h2>
-              <p className="text-sm text-gray-400 mt-1">Агент болон агентлагийн бүртгэл</p>
-            </div>
-
-            <AgentPortalLoginForm />
-
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-xs text-gray-500 text-center mb-4">Агентлаг бүртгүүлэх үү?</p>
-              <Link
-                href="/register?mode=agency"
-                className="flex items-center justify-center w-full border border-white/20 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-white/5 transition-colors"
-              >
-                Агентлаг бүртгүүлэх
-              </Link>
-              <p className="text-xs text-gray-600 text-center mt-3">
-                Агент болохыг хүсвэл агентлагаасаа урилга аваарай
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
+      </main>
     </div>
   );
 }

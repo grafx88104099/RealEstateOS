@@ -110,19 +110,18 @@ export default function HomeClient({
   const hasFilters = !!(district || listingType || maxPrice || minRooms || zone);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-slate-50">
+      {/* LEFT column: header + main (shrinks when AI panel opens) */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="flex-shrink-0 sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-gray-200/70">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3.5 flex items-center gap-4">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
-              <svg className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.75L12 3l9 6.75V20a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V9.75z" />
-              </svg>
-            </div>
-            <span className="font-bold text-gray-900 text-[15px] tracking-tight">
-              RealEstate<span className="text-indigo-600">OS</span>
+          <a href="/" className="flex items-center flex-shrink-0">
+            <span
+              className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-2xl tracking-tight lowercase leading-none"
+            >
+              meni
             </span>
           </a>
 
@@ -154,6 +153,22 @@ export default function HomeClient({
               </>
             )}
           </div>
+
+          {/* AI toggle (after auth) */}
+          <button
+            onClick={() => setShowAiPanel((v) => !v)}
+            aria-label="AI Зуучлагч"
+            aria-pressed={showAiPanel}
+            className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              showAiPanel
+                ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/30"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2L8 6 4 7l3 3-1 5 4-2 4 2-1-5 3-3-4-1z" />
+            </svg>
+          </button>
         </div>
 
         {/* Filter pills row */}
@@ -274,141 +289,114 @@ export default function HomeClient({
         />
       )}
 
-      {/* ── AI Prompt Hero Bar (always visible at top) ─────────── */}
-      <div className="flex-shrink-0 border-b border-gray-200/70 bg-gradient-to-br from-indigo-50/40 via-white to-violet-50/40">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4">
-          <button
-            onClick={() => setShowAiPanel(true)}
-            className="group w-full flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all text-left"
-          >
-            <span className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-sm">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2L8 6 4 7l3 3-1 5 4-2 4 2-1-5 3-3-4-1z" />
-              </svg>
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-[14px] font-semibold text-gray-900">
-                AI Зуучлагчтай ярих
-              </span>
-              <span className="block text-[12.5px] text-gray-500 truncate">
-                Жишээ: «БЗД, 2 өрөө, 300 саяас доош, метро ойр»
-              </span>
-            </span>
-            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full group-hover:bg-indigo-100 transition-colors">
-              Эхлэх
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Main: Grid (left) + Map (right) — Airbnb-style ─────── */}
+      {/* ── Main: Map (full) + Listings strip (bottom) ─ */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: listing grid */}
-        <div
-          className={`flex flex-col overflow-hidden flex-1 ${
-            !showMap ? "w-full" : "md:max-w-[60%]"
-          }`}
-        >
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-5">
-              {filteredListings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center mb-4">
-                    <svg className="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    {zone ? "Энэ бүсэд зар олдсонгүй" : "Зар олдсонгүй"}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Шүүлтүүрээ өргөтгөөд эсвэл AI-аас асуу
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-baseline justify-between mb-4">
-                    <h1 className="text-[20px] font-bold text-gray-900 tracking-tight">
-                      {hasFilters || isAIMode ? "Хайлтын үр дүн" : "Шинэ зарууд"}
-                    </h1>
-                    <p className="text-[13px] text-gray-500">
-                      {filteredListings.length} тохирол
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredListings.map((listing) => (
-                      <div
-                        key={listing.id}
-                        ref={(el) => {
-                          if (el) cardRefs.current.set(listing.id, el);
-                        }}
-                      >
-                        <ListingCard
-                          listing={listing}
-                          active={listing.id === activeId}
-                          onClick={() =>
-                            setActiveId(listing.id === activeId ? null : listing.id)
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT: sticky map */}
-        {showMap && (
-          <div className="hidden md:block w-[40%] border-l border-gray-200 relative">
+        <div className="flex flex-col flex-1 overflow-hidden min-w-0 relative">
+          {/* MAP fills the main area */}
+          <div className="flex-1 relative min-h-0">
             <ListingMap
               listings={filteredListings}
               activeId={activeId}
               onMarkerClick={handleMarkerClick}
             />
           </div>
-        )}
-      </div>
 
-      {/* AI Chat: floating panel (opens when user taps the hero bar).
-          z-[9999] used so it stacks above Leaflet panes (which sit at z-400+). */}
-      {showAiPanel && (
-        <div className="fixed bottom-6 right-6 z-[9999] w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-7rem)] bg-white rounded-2xl shadow-2xl shadow-indigo-500/20 ring-1 ring-gray-200 overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-violet-50">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold">
-                AI
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold text-gray-900">AI Зуучлагч</p>
-                <p className="text-[11px] text-gray-500">Байгалийн хэлээр асуу</p>
-              </div>
+          {/* BOTTOM: horizontal listings strip */}
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white/95 backdrop-blur-sm">
+            <div className="px-4 sm:px-6 pt-3 pb-1 flex items-baseline justify-between">
+              <h1 className="text-[15px] font-semibold text-gray-900 tracking-tight">
+                {hasFilters || isAIMode ? "Хайлтын үр дүн" : "Шинэ зарууд"}
+              </h1>
+              <p className="text-[12px] text-gray-500">
+                {filteredListings.length} тохирол
+              </p>
             </div>
+            {filteredListings.length === 0 ? (
+              <div className="px-4 sm:px-6 py-6 text-center">
+                <p className="text-sm text-gray-500">
+                  {zone ? "Энэ бүсэд зар олдсонгүй" : "Зар олдсонгүй"} — шүүлтүүрээ өргөтгөөд эсвэл AI-аас асуу
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto overflow-y-hidden scrollbar-none">
+                <div className="flex gap-3 px-4 sm:px-6 py-3">
+                  {filteredListings.map((listing) => (
+                    <div
+                      key={listing.id}
+                      ref={(el) => {
+                        if (el) cardRefs.current.set(listing.id, el);
+                      }}
+                      className="flex-shrink-0 w-[260px]"
+                    >
+                      <ListingCard
+                        listing={listing}
+                        active={listing.id === activeId}
+                        onClick={() =>
+                          setActiveId(listing.id === activeId ? null : listing.id)
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>{/* close Main wrapper */}
+
+      {/* Footer */}
+      <footer className="flex-shrink-0 border-t border-gray-200 bg-white">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-gray-500">
+          <span className="font-[family-name:var(--font-onest)] font-extrabold text-gray-700 text-base lowercase tracking-tight leading-none">
+            meni
+          </span>
+          <span className="hidden sm:inline">© {new Date().getFullYear()} meni — Үл хөдлөх хөрөнгийн зар</span>
+          <span className="flex-1" />
+          <a href="/about" className="hover:text-gray-900 transition-colors">Бидний тухай</a>
+          <a href="/terms" className="hover:text-gray-900 transition-colors">Үйлчилгээний нөхцөл</a>
+          <a href="/privacy" className="hover:text-gray-900 transition-colors">Нууцлал</a>
+          <a href="mailto:hello@meni.mn" className="hover:text-gray-900 transition-colors">Холбоо барих</a>
+          <a
+            href="/agents"
+            className="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+          >
+            Агент
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      </footer>
+      </div>{/* close LEFT column */}
+
+      {/* AI side panel: spans full viewport height, pushes the LEFT column. */}
+      <aside
+          className={`flex-shrink-0 border-l border-gray-200 bg-white flex flex-col overflow-hidden transition-[width] duration-300 ease-out ${
+            showAiPanel ? "w-[380px] max-w-[90vw]" : "w-0"
+          }`}
+          aria-hidden={!showAiPanel}
+        >
+          <div className="w-[380px] max-w-[90vw] flex flex-col h-full relative">
             <button
               onClick={() => setShowAiPanel(false)}
               aria-label="Хаах"
-              className="w-7 h-7 rounded-full hover:bg-white/70 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors"
+              className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-white/80 hover:bg-white shadow-sm ring-1 ring-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+            <div className="flex-1 min-h-0">
+              <AiChat
+                onListingsChange={handleListingsChange}
+                district={district}
+                listingType={listingType}
+                maxPrice={maxPrice}
+                minRooms={minRooms}
+              />
+            </div>
           </div>
-          <div className="flex-1 min-h-0">
-            <AiChat
-              onListingsChange={handleListingsChange}
-              district={district}
-              listingType={listingType}
-              maxPrice={maxPrice}
-              minRooms={minRooms}
-            />
-          </div>
-        </div>
-      )}
+        </aside>
     </div>
   );
 }

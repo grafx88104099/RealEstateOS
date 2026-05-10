@@ -26,7 +26,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
     <div className="min-h-screen bg-gray-50 flex">
       <aside className="w-56 bg-white border-r border-gray-200 flex flex-col">
         <div className="px-5 py-5 border-b border-gray-100">
-          <span className="font-bold text-gray-900 text-sm">Real Estate OS</span>
+          <span className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-xl tracking-tight lowercase">meni</span>
           <p className="text-xs text-red-500 mt-0.5 font-medium">Super Admin</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
@@ -34,7 +34,10 @@ export default async function SuperAdminLayout({ children }: { children: React.R
             Нүүр
           </Link>
           <Link href="/super/tenants" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
-            Агентлагууд
+            Оффисууд
+          </Link>
+          <Link href="/super/agents" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+            Агентууд
           </Link>
           <Link href="/super/users" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
             Хэрэглэгчид

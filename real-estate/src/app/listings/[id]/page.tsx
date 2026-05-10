@@ -106,8 +106,8 @@ export default async function ListingDetailPage({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
-          <Link href="/" className="font-bold text-gray-900 text-sm hover:text-blue-600 transition-colors">
-            Real Estate OS
+          <Link href="/" className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-xl tracking-tight lowercase hover:text-blue-600 transition-colors">
+            meni
           </Link>
           <div className="flex-1" />
           {session ? (

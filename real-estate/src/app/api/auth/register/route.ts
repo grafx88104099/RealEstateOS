@@ -28,15 +28,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "agency_name шаардлагатай" }, { status: 400 });
   }
 
-  // Ижил имэйл байгаа эсэхийг шалгах
+  // Ижил имэйл байгаа эсэхийг шалгах. Бүртгэлтэй бол одоогийн role-оор тохирох мэдээлэл буцаана.
   const { data: existing } = await supabaseAdmin
     .from("users")
-    .select("id, email")
+    .select("id, email, role")
     .eq("email", String(email))
-    .single();
+    .maybeSingle();
 
   if (existing) {
-    return NextResponse.json({ error: "Энэ имэйл хаяг бүртгэлтэй байна" }, { status: 409 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existingRole = (existing as any).role as string;
+    const labels: Record<string, string> = {
+      agent: "оффисын агент",
+      tenant_admin: "оффисын админ",
+      super_admin: "системийн админ",
+      consumer: "энгийн хэрэглэгч",
+    };
+    const label = labels[existingRole] ?? existingRole;
+    if (mode === "consumer" && existingRole !== "consumer") {
+      return NextResponse.json({
+        error: `Энэ имэйл хаягаар ${label}-ийн бүртгэлтэй байна. Энгийн хэрэглэгчийн бүртгэл үүсгэхийн тулд өөр имэйл хаяг ашиглана уу.`,
+      }, { status: 409 });
+    }
+    if (mode === "agency" && existingRole === "consumer") {
+      return NextResponse.json({
+        error: "Энэ имэйл хаягаар энгийн хэрэглэгчийн бүртгэлтэй байна. Шинэ оффис нээхийн тулд өөр имэйл хаяг ашиглана уу.",
+      }, { status: 409 });
+    }
+    return NextResponse.json({
+      error: `Энэ имэйл хаягаар ${label}-ийн бүртгэлтэй байна.`,
+    }, { status: 409 });
   }
 
   // Auth user үүсгэх. Хэрэв өмнө supabase.auth.signUp-ээр үүссэн боловч public.users

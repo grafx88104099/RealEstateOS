@@ -26,14 +26,14 @@ export default async function SettingsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Тохиргоо</h1>
-          <p className="text-sm text-gray-500 mt-1">Агентлагийн мэдээлэл ба тохиргоо</p>
+          <p className="text-sm text-gray-500 mt-1">Оффисын мэдээлэл ба тохиргоо</p>
         </div>
         <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">← Буцах</Link>
       </div>
 
       {/* Tenant Info */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h2 className="font-semibold text-gray-900 text-sm mb-4">Агентлагийн мэдээлэл</h2>
+        <h2 className="font-semibold text-gray-900 text-sm mb-4">Оффисын мэдээлэл</h2>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="bg-gray-50 rounded-lg p-3">
             <p className="text-xs text-gray-400">Нэр</p>

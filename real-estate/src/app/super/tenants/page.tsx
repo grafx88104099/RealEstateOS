@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin as typedAdmin } from "@/lib/supabase/admin";
 import { ReviewToggle } from "@/components/super/public-listings/review-toggle";
@@ -30,8 +31,8 @@ export default async function SuperTenantsPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Агентлагууд</h1>
-        <p className="text-sm text-gray-500 mt-1">{rows.length} агентлаг</p>
+        <h1 className="text-2xl font-bold text-gray-900">Оффисууд</h1>
+        <p className="text-sm text-gray-500 mt-1">{rows.length} оффис</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -56,12 +57,22 @@ export default async function SuperTenantsPage() {
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Зар хяналт
               </th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Үйлдэл
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {rows.map((t) => (
               <tr key={t.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{t.name}</td>
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/super/tenants/${t.id}`}
+                    className="font-medium text-gray-900 hover:text-indigo-600 transition-colors"
+                  >
+                    {t.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-3 text-gray-500 font-mono text-xs">{t.slug}</td>
                 <td className="px-4 py-3">
                   <span
@@ -101,12 +112,20 @@ export default async function SuperTenantsPage() {
                     </span>
                   </div>
                 </td>
+                <td className="px-4 py-3 text-right">
+                  <Link
+                    href={`/super/tenants/${t.id}`}
+                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                  >
+                    Дэлгэрэнгүй →
+                  </Link>
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                  Агентлаг байхгүй байна
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                  Оффис байхгүй байна
                 </td>
               </tr>
             )}

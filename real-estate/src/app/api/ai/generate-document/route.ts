@@ -38,11 +38,11 @@ const DOC_TEMPLATES: Record<string, { name: string; prompt: string }> = {
     prompt: `Монгол хэл дээр үл хөдлөх хөрөнгийн үнийн санал (proposal) бич.
 
 Бүтэц:
-1. Агентлагийн мэдээлэл
+1. Оффисын мэдээлэл
 2. Объектын товч тайлбар
 3. Техникийн үзүүлэлтүүд
 4. Үнэ ба нөхцөл
-5. Агентлагийн үйлчилгээ
+5. Оффисын үйлчилгээ
 6. Холбоо барих
 
 Мэргэжлийн, товч, ойлгомжтой байх.`,
@@ -118,9 +118,9 @@ export async function POST(req: NextRequest) {
 - Хаяг: ${listing.address || "—"}
 
 Агент: ${agent?.full_name || "—"} (${agent?.email || ""})
-Агентлаг: ${tenant?.name || "—"}
-Агентлагийн утас: ${settings.contact_phone || "—"}
-Агентлагийн email: ${settings.contact_email || "—"}
+Оффис: ${tenant?.name || "—"}
+Оффисын утас: ${settings.contact_phone || "—"}
+Оффисын email: ${settings.contact_email || "—"}
 
 ${body.buyer_name ? `Худалдан авагч: ${body.buyer_name}` : ""}
 ${body.buyer_phone ? `Худалдан авагчийн утас: ${body.buyer_phone}` : ""}

@@ -86,7 +86,7 @@ export function AiDigestCard() {
           </div>
         ) : (
           <div className="text-center py-6">
-            <p className="text-sm text-gray-400">AI тойм үүсгэж агентлагийн долоо хоногийн тоймыг харах</p>
+            <p className="text-sm text-gray-400">AI тойм үүсгэж оффисын долоо хоногийн тоймыг харах</p>
             <p className="text-xs text-gray-300 mt-1">Агентуудын гүйцэтгэл, зах зээлийн чиг хандлага, зөвлөмж</p>
           </div>
         )}

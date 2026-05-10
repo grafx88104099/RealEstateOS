@@ -2,7 +2,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin:  "Super Admin",
-  tenant_admin: "Агентлагийн админ",
+  tenant_admin: "Оффисын админ",
   agent:        "Агент",
   seller:       "Худалдагч",
   buyer:        "Худалдан авагч",
@@ -36,7 +36,7 @@ export default async function SuperUsersPage() {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Нэр / Имэйл</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Агентлаг</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Оффис</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Эрх</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Огноо</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Төлөв</th>

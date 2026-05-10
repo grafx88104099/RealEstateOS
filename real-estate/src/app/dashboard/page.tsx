@@ -1,4 +1,5 @@
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { decodeJWT } from "@/lib/utils/jwt";
 import { StatCard } from "@/components/ui/stat-card";
 import { InquiryStatusBadge } from "@/components/inquiries/status-badge";
@@ -23,11 +24,13 @@ export default async function DashboardPage() {
   const tenantId = payload.tenant_id as string;
 
   const [
+    tenantRow,
     totalListings, activeListings, soldListings,
     totalInquiries, newInquiries, closedWonInquiries,
     totalAgents, activeAgents,
     recentInquiries, recentListings, topAgents,
   ] = await Promise.all([
+    supabaseAdmin.from("tenants").select("name, slug, logo_url, settings, subscription").eq("id", tenantId).single(),
     supabase.from("listings").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).is("deleted_at", null),
     supabase.from("listings").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "active").is("deleted_at", null),
     supabase.from("listings").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("status", "sold").is("deleted_at", null),
@@ -60,23 +63,78 @@ export default async function DashboardPage() {
   // Unanswered inquiry alert
   const unansweredCount = newInquiries.count ?? 0;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tenant = (tenantRow.data ?? {}) as any;
+  const tenantSettings = (tenant.settings ?? {}) as Record<string, string | undefined>;
+  const tenantName: string = tenant.name ?? "Оффис";
+  const tenantLogo: string | null = tenant.logo_url ?? null;
+  const tenantPhone = tenantSettings.phone ?? "";
+  const tenantAddress = tenantSettings.address ?? "";
+  const tenantSubscription = tenant.subscription ?? "free";
+  const setupPending = !tenantLogo || !tenantPhone || !tenantAddress;
+
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Хяналтын самбар</h1>
-          <p className="text-sm text-gray-500 mt-1">Сайн байна уу, {session.user.email}</p>
+    <div className="p-8 max-w-screen-2xl mx-auto">
+      {/* Office identity card */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 flex items-start gap-5 flex-wrap">
+        <div className="flex-shrink-0 w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-100 to-violet-100 ring-2 ring-white shadow-sm flex items-center justify-center text-indigo-400">
+          {tenantLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={tenantLogo} alt={tenantName} className="w-full h-full object-cover" />
+          ) : (
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.75L12 3l9 6.75V20a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V9.75z" />
+            </svg>
+          )}
         </div>
-        <div className="flex gap-2">
-          <Link href="/dashboard/users" className="text-sm font-medium text-gray-600 bg-white border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-            Хэрэглэгчид
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold text-gray-900 truncate">{tenantName}</h1>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide ${
+              tenantSubscription === "pro" ? "bg-purple-50 text-purple-700"
+              : tenantSubscription === "enterprise" ? "bg-blue-50 text-blue-700"
+              : "bg-gray-100 text-gray-600"
+            }`}>
+              {tenantSubscription}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {tenantPhone || "Утас оруулаагүй"}
+            {tenantAddress ? ` · ${tenantAddress}` : ""}
+          </p>
+          <p className="text-xs text-gray-400 mt-1.5">Сайн байна уу, {session.user.email}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/dashboard/settings" className="text-sm font-medium text-gray-700 bg-white border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+            Тохиргоо
           </Link>
-          <Link href="/dashboard/listings/new" className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          <Link href="/dashboard/agents" className="text-sm font-medium text-gray-700 bg-white border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+            Агентууд
+          </Link>
+          <Link href="/dashboard/listings/new" className="inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:shadow-md hover:shadow-indigo-500/25 transition-all">
             + Шинэ зар
           </Link>
         </div>
       </div>
+
+      {setupPending && (
+        <div className="mb-6 flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
+          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 text-indigo-600">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-indigo-900">Оффисын мэдээллээ бөглөж дуусгах</p>
+            <p className="text-xs text-indigo-700 mt-0.5">
+              {!tenantLogo && "Лого · "}{!tenantPhone && "Утас · "}{!tenantAddress && "Хаяг "}нэмбэл харилцагчид итгэл өгөх боломжтой.
+            </p>
+          </div>
+          <Link href="/dashboard/settings" className="text-xs font-medium text-indigo-700 bg-white hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-md transition-colors">
+            Засах →
+          </Link>
+        </div>
+      )}
 
       {/* Alerts */}
       {unansweredCount > 0 && (
@@ -106,7 +164,7 @@ export default async function DashboardPage() {
           <div className="mt-2 space-y-1.5">
             <Link href="/dashboard/analytics" className="block text-xs text-purple-600 hover:underline font-medium">Аналитик & AI тойм</Link>
             <Link href="/dashboard/commissions" className="block text-xs text-green-600 hover:underline font-medium">Комиссийн бүртгэл</Link>
-            <Link href="/dashboard/users" className="block text-xs text-blue-600 hover:underline">Агент урих</Link>
+            <Link href="/dashboard/agents" className="block text-xs text-blue-600 hover:underline">Агент урих</Link>
           </div>
         </div>
       </div>
@@ -182,7 +240,7 @@ export default async function DashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 lg:col-span-2">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-semibold text-gray-900 text-sm">Агентууд</h2>
-            <Link href="/dashboard/users" className="text-xs text-blue-600 hover:underline">Бүгдийг харах</Link>
+            <Link href="/dashboard/agents" className="text-xs text-blue-600 hover:underline">Бүгдийг харах</Link>
           </div>
           <div className="p-5">
             {topAgents.data && topAgents.data.length > 0 ? (

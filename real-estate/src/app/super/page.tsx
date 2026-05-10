@@ -44,7 +44,7 @@ export default async function SuperAdminHomePage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Агентлаг" value={tenants.count ?? 0} />
+        <StatCard label="Оффис" value={tenants.count ?? 0} />
         <StatCard label="Нийт зар" value={listings.count ?? 0} />
         <StatCard label="Нийт хэрэглэгч" value={users.count ?? 0} />
         <StatCard label="Нийт хүсэлт" value={inquiries.count ?? 0} />
@@ -137,7 +137,7 @@ export default async function SuperAdminHomePage() {
             </div>
             <h3 className="font-semibold text-gray-900">Идэвхтэй зарууд</h3>
             <p className="text-sm text-gray-500 mt-1">
-              Бүх агентлагийн зар — шүүлт, статус, устгал
+              Бүх оффисын зар — шүүлт, статус, устгал
             </p>
           </Link>
 
@@ -214,9 +214,9 @@ export default async function SuperAdminHomePage() {
             href="/super/tenants"
             className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
           >
-            <h3 className="font-semibold text-gray-900">Агентлагууд</h3>
+            <h3 className="font-semibold text-gray-900">Оффисууд</h3>
             <p className="text-sm text-gray-500 mt-1">
-              Бүх агентлагийн жагсаалт, идэвхжүүлэх/хаах, хяналт идэвхжүүлэх
+              Бүх оффисын жагсаалт, идэвхжүүлэх/хаах, хяналт идэвхжүүлэх
             </p>
           </Link>
           <Link

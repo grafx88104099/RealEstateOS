@@ -1,14 +1,6 @@
 import { createSupabaseServer } from "@/lib/supabase/server";
-import { StatCard } from "@/components/ui/stat-card";
-import { InquiryStatusBadge } from "@/components/inquiries/status-badge";
-import { STATUS_LABELS, STATUS_COLORS } from "@/lib/constants/listings";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
-
-function formatPrice(p: number) {
-  if (p >= 1_000_000_000) return `${(p / 1_000_000_000).toFixed(1)} тэрбум₮`;
-  if (p >= 1_000_000) return `${(p / 1_000_000).toFixed(0)} сая₮`;
-  return `${p.toLocaleString()}₮`;
-}
 
 export default async function ConsumerHomePage() {
   const supabase = await createSupabaseServer();
@@ -17,116 +9,126 @@ export default async function ConsumerHomePage() {
 
   const userId = session.user.id;
 
-  const [sentInquiries, myListings, activeListings, recentInquiries, recentListings, preferences] = await Promise.all([
+  const [sentInquiries, myListings, activeListings, me] = await Promise.all([
     supabase.from("inquiries").select("id", { count: "exact", head: true }).eq("buyer_id", userId),
     supabase.from("listings").select("id", { count: "exact", head: true }).eq("seller_id", userId).is("deleted_at", null),
     supabase.from("listings").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("status", "active").is("deleted_at", null),
-    supabase.from("inquiries")
-      .select(`id, status, created_at, listing:listings(id, title, price, district)`)
-      .eq("buyer_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(4),
-    supabase.from("listings")
-      .select("id, title, status, price, district")
-      .eq("seller_id", userId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(3),
-    supabase.from("buyer_preferences").select("id").eq("user_id", userId).single(),
+    supabaseAdmin.from("users").select("full_name, phone, avatar_url").eq("id", userId).maybeSingle(),
   ]);
 
+  const myListingsCount = myListings.count ?? 0;
+  const activeListingsCount = activeListings.count ?? 0;
+  const sentInquiriesCount = sentInquiries.count ?? 0;
+  const fullName = me.data?.full_name ?? "";
+  const phone = me.data?.phone ?? "";
+  const avatarUrl = me.data?.avatar_url ?? "";
+  const displayName = fullName.trim() || (session.user.email ?? "").split("@")[0];
+
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Сайн байна уу!</h1>
-          <p className="text-sm text-gray-500 mt-1">{session.user.email}</p>
+    <div className="p-8 max-w-screen-xl mx-auto">
+      {/* Хувийн мэдээллийн карт */}
+      <Link
+        href="/consumer/profile"
+        className="group mb-6 flex items-center gap-4 bg-white rounded-2xl border border-gray-200 p-5 hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-500/5 transition-all"
+      >
+        <div className="flex-shrink-0 w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-indigo-100 to-violet-100 ring-2 ring-white shadow-sm flex items-center justify-center text-indigo-400">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+          ) : (
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          )}
         </div>
-        <div className="flex gap-2">
-          <Link href="/consumer/search"
-            className="text-sm font-medium text-blue-600 border border-blue-200 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-gray-900 truncate">
+            Сайн байна уу, {displayName}!
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5 truncate">
+            {session.user.email}
+            {phone ? ` · ${phone}` : ""}
+          </p>
+        </div>
+        <span className="hidden sm:inline-flex flex-shrink-0 items-center gap-1 text-sm font-medium text-indigo-600 group-hover:gap-2 transition-all">
+          Засах
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </span>
+      </Link>
+
+      {/* Үндсэн үйлдлийн карт-ууд: Зарна / Авна */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link
+          href="/consumer/my-listings"
+          className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-6 transition-all hover:shadow-lg hover:shadow-indigo-500/10 hover:border-indigo-300"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/30">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8m-4-4h8M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-gray-900">Зарна</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Үл хөдлөх хөрөнгөө зарлах — зураг, мэдээлэл оруулж шууд нийтэлнэ.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="bg-white/70 backdrop-blur-sm border border-indigo-100 rounded-xl px-3 py-2.5">
+              <p className="text-[11px] text-gray-500 uppercase tracking-wide font-medium">Миний зарууд</p>
+              <p className="text-xl font-bold text-gray-900 mt-0.5">{myListingsCount}</p>
+            </div>
+            <div className="bg-white/70 backdrop-blur-sm border border-indigo-100 rounded-xl px-3 py-2.5">
+              <p className="text-[11px] text-gray-500 uppercase tracking-wide font-medium">Идэвхтэй</p>
+              <p className="text-xl font-bold text-gray-900 mt-0.5">{activeListingsCount}</p>
+            </div>
+          </div>
+
+          <span className="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-indigo-600 group-hover:gap-2 transition-all">
+            Миний зарууд
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </Link>
+
+        <Link
+          href="/consumer/search"
+          className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-6 transition-all hover:shadow-lg hover:shadow-emerald-500/10 hover:border-emerald-300"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/30">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-gray-900">Авна</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Хайлт, шүүлтүүр, AI зөвлөгчтэй өөрт тохирох орон сууцаа сонгоорой.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-3">
+            <div className="bg-white/70 backdrop-blur-sm border border-emerald-100 rounded-xl px-3 py-2.5">
+              <p className="text-[11px] text-gray-500 uppercase tracking-wide font-medium">Илгээсэн хүсэлт</p>
+              <p className="text-xl font-bold text-gray-900 mt-0.5">{sentInquiriesCount}</p>
+            </div>
+          </div>
+
+          <span className="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-emerald-600 group-hover:gap-2 transition-all">
             Зар хайх
-          </Link>
-          <Link href="/consumer/my-listings/new"
-            className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-            + Зар нэмэх
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <StatCard label="Илгээсэн хүсэлт" value={sentInquiries.count ?? 0} />
-        <StatCard label="Миний зарууд" value={myListings.count ?? 0} />
-        <StatCard label="Идэвхтэй зар" value={activeListings.count ?? 0} />
-      </div>
-
-      {!preferences.data && (
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-blue-900">AI тохирол идэвхжүүлэх</p>
-            <p className="text-xs text-blue-600 mt-0.5">Сонирхлоо тохируулбал таны хайлтад тохирох зарыг автоматаар санал болгоно</p>
-          </div>
-          <Link href="/consumer/preferences" className="text-sm font-medium text-blue-700 hover:text-blue-900 whitespace-nowrap ml-4">
-            Тохируулах →
-          </Link>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Илгээсэн хүсэлтүүд */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900 text-sm">Илгээсэн хүсэлтүүд</h2>
-            <Link href="/consumer/inquiries" className="text-xs text-blue-600 hover:underline">Бүгд</Link>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {recentInquiries.data?.map((inq) => {
-              const listing = inq.listing as { id: string; title: string; price: number; district: string | null } | null;
-              return (
-                <div key={inq.id} className="px-5 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 truncate max-w-[180px]">{listing?.title ?? "—"}</p>
-                    <p className="text-xs text-gray-500">{listing?.price ? formatPrice(listing.price) : "—"}{listing?.district ? ` · ${listing.district}` : ""}</p>
-                  </div>
-                  <InquiryStatusBadge status={inq.status} />
-                </div>
-              );
-            })}
-            {(!recentInquiries.data || recentInquiries.data.length === 0) && (
-              <div className="px-5 py-6 text-center">
-                <p className="text-sm text-gray-400">Хүсэлт байхгүй</p>
-                <Link href="/consumer/search" className="text-xs text-blue-600 hover:underline mt-1 inline-block">Зар хайх →</Link>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Миний зарууд */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900 text-sm">Миний зарууд</h2>
-            <Link href="/consumer/my-listings" className="text-xs text-blue-600 hover:underline">Бүгд</Link>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {recentListings.data?.map((l) => (
-              <div key={l.id} className="px-5 py-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 truncate max-w-[180px]">{l.title}</p>
-                  <p className="text-xs text-gray-500">{formatPrice(l.price)}{l.district ? ` · ${l.district}` : ""}</p>
-                </div>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[l.status] ?? "bg-gray-100"}`}>
-                  {STATUS_LABELS[l.status] ?? l.status}
-                </span>
-              </div>
-            ))}
-            {(!recentListings.data || recentListings.data.length === 0) && (
-              <div className="px-5 py-6 text-center">
-                <p className="text-sm text-gray-400">Зар байхгүй</p>
-                <Link href="/consumer/my-listings/new" className="text-xs text-blue-600 hover:underline mt-1 inline-block">Зар нэмэх →</Link>
-              </div>
-            )}
-          </div>
-        </div>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </Link>
       </div>
     </div>
   );

@@ -44,7 +44,29 @@ export async function GET(req: NextRequest) {
       if (missingGeo) continue;
       return NextResponse.json({ error: msg }, { status: 500 });
     }
-    return NextResponse.json({ listings: data ?? [] });
+
+    // Fetch cover images in a separate query and merge.
+    const ids = (data ?? []).map((r) => (r as { id: string }).id);
+    let coverByListing = new Map<string, string>();
+    if (ids.length > 0) {
+      const { data: imgs } = await supabaseAdmin
+        .from("listing_images")
+        .select("listing_id, url, is_cover, sort_order")
+        .in("listing_id", ids)
+        .is("deleted_at", null)
+        .order("is_cover", { ascending: false })
+        .order("sort_order", { ascending: true });
+      for (const row of (imgs ?? []) as { listing_id: string; url: string }[]) {
+        if (!coverByListing.has(row.listing_id)) {
+          coverByListing.set(row.listing_id, row.url);
+        }
+      }
+    }
+    const enriched = (data ?? []).map((r) => {
+      const id = (r as { id: string }).id;
+      return { ...r, cover_image_url: coverByListing.get(id) ?? null };
+    });
+    return NextResponse.json({ listings: enriched });
   }
 
   return NextResponse.json({ listings: [] });

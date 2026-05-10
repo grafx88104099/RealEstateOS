@@ -193,7 +193,7 @@ export default async function PublicListingDetailPage({
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <h3 className="text-xs font-medium uppercase text-gray-500 mb-2">
-              Агентлаг
+              Оффис
             </h3>
             {l.tenant ? (
               <div>

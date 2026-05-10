@@ -103,7 +103,7 @@ export function TenantSettingsForm({ tenantId, currentSettings }: Props) {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div className="flex items-end pb-2">
-            <p className="text-xs text-gray-400">Агентлаг: {100 - form.agent_split}%</p>
+            <p className="text-xs text-gray-400">Оффис: {100 - form.agent_split}%</p>
           </div>
         </div>
       </div>

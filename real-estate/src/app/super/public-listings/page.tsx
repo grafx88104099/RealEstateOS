@@ -68,7 +68,7 @@ export default async function PublicListingsHubPage() {
         >
           <h3 className="font-semibold text-gray-900">Бүх зар</h3>
           <p className="text-sm text-gray-500 mt-1">
-            Бүх агентлагийн зар, шүүлтүүртэй жагсаалт.
+            Бүх оффисын зар, шүүлтүүртэй жагсаалт.
           </p>
         </Link>
         <div className="bg-white rounded-xl border border-gray-200 border-dashed p-5">

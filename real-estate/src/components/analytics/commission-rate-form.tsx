@@ -83,7 +83,7 @@ export function CommissionRateForm({ tenantId, currentRate, currentSplit }: Comm
           />
         </div>
         <div className="text-xs text-gray-400 pb-1.5">
-          Агентлагийн хувь: {100 - Number(split)}%
+          Оффисын хувь: {100 - Number(split)}%
         </div>
         <button
           onClick={save}

@@ -36,16 +36,36 @@ function LoginForm() {
       return;
     }
 
-    // Role-оор redirect хийх
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const payload = decodeJWT(session.access_token);
-      const role = payload.user_role as AllowedRole | undefined;
-      const home = role && ROLE_HOME[role] ? ROLE_HOME[role] : "/dashboard";
-      router.push(home);
-    } else {
-      router.push("/dashboard");
+    if (!session) {
+      router.push("/consumer");
+      router.refresh();
+      return;
     }
+
+    const payload = decodeJWT(session.access_token);
+    const role = payload.user_role as AllowedRole | undefined;
+
+    // /login нь зөвхөн consumer (энгийн хэрэглэгч)-д. Бусад role-той имэйл бол
+    // sign out хийгээд тохирох мэдэгдэл харуулна.
+    if (role && role !== "consumer") {
+      await supabase.auth.signOut();
+      const labels: Record<string, string> = {
+        agent: "оффисын агент",
+        tenant_admin: "оффисын админ",
+        super_admin: "системийн админ",
+      };
+      const label = labels[role] ?? role;
+      const portal = role === "super_admin" ? "/super/login" : "/agent-portal";
+      setError(
+        `Энэ имэйл хаягаар ${label}-ийн бүртгэлтэй байна. Энгийн хэрэглэгчээр нэвтрэхийн тулд өөр имэйлээр бүртгэл үүсгэнэ үү. Хэрэв та ${label} мөн бол ${portal} дээр нэвтэрнэ үү.`
+      );
+      setLoading(false);
+      return;
+    }
+
+    const home = role && ROLE_HOME[role] ? ROLE_HOME[role] : "/consumer";
+    router.push(home);
     router.refresh();
   }
 
@@ -54,7 +74,7 @@ function LoginForm() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Нэвтрэх</h1>
-          <p className="text-sm text-gray-500 mt-1">Real Estate OS</p>
+          <p className="font-[family-name:var(--font-onest)] text-base font-extrabold text-gray-700 mt-1 tracking-tight lowercase">meni</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">

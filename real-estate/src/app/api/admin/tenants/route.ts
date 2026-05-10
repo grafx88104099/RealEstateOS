@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
 
   // tenant_admin can only update their own tenant
   if (auth.role === "tenant_admin" && targetTenantId !== auth.tenantId) {
-    return NextResponse.json({ error: "Зөвхөн өөрийн агентлагийн тохиргоо" }, { status: 403 });
+    return NextResponse.json({ error: "Зөвхөн өөрийн оффисын тохиргоо" }, { status: 403 });
   }
 
   if (!body.settings) {

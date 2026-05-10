@@ -12,6 +12,7 @@ export interface PublicListing {
   listing_type: string;
   district: string | null;
   address: string | null;
+  cover_image_url?: string | null;
   similarity?: number;
 }
 
@@ -33,7 +34,7 @@ export function ListingCard({ listing, active, onClick }: ListingCardProps) {
   return (
     <article
       onClick={onClick}
-      className={`group relative bg-white rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden
+      className={`group relative bg-white rounded-none cursor-pointer transition-all duration-200 overflow-hidden
         ${
           active
             ? "ring-2 ring-indigo-500 shadow-[0_8px_30px_rgba(99,102,241,0.15)]"
@@ -42,22 +43,31 @@ export function ListingCard({ listing, active, onClick }: ListingCardProps) {
     >
       {/* Image area */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100">
-        {/* Subtle decorative pattern */}
-        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
-          <svg
-            className="w-12 h-12"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="1.25"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 9.75L12 3l9 6.75V20a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V9.75z"
-            />
-          </svg>
-        </div>
+        {listing.cover_image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={listing.cover_image_url}
+            alt={listing.title}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+            <svg
+              className="w-12 h-12"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="1.25"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 9.75L12 3l9 6.75V20a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V9.75z"
+              />
+            </svg>
+          </div>
+        )}
 
         {/* Gradient overlay top */}
         <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/15 to-transparent pointer-events-none" />

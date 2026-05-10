@@ -21,14 +21,25 @@ export default async function ConsumerMyListingsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Миний зарууд</h1>
-          <p className="text-sm text-gray-500 mt-1">{listings?.length ?? 0} зар</p>
+    <div className="p-8 max-w-screen-xl mx-auto">
+      <div className="flex items-center justify-between mb-6 gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link
+            href="/consumer"
+            aria-label="Буцах"
+            className="flex-shrink-0 w-9 h-9 rounded-full bg-white border border-gray-200 hover:bg-gray-100 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900">Миний зарууд</h1>
+            <p className="text-sm text-gray-500 mt-1">{listings?.length ?? 0} зар</p>
+          </div>
         </div>
         <Link href="/consumer/my-listings/new"
-          className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex-shrink-0">
           + Зар нэмэх
         </Link>
       </div>

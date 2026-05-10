@@ -51,7 +51,7 @@ export default async function AgentHomePage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Миний зарууд" value={myListings.count ?? 0} />
-        <StatCard label="Нийт зар" value={allListings.count ?? 0} sub="агентлагт" />
+        <StatCard label="Нийт зар" value={allListings.count ?? 0} sub="оффист" />
         <StatCard label="Шинэ хүсэлт" value={openInquiries.count ?? 0} />
         <StatCard label="Хаагдсан хүсэлт" value={closedInquiries.count ?? 0} />
       </div>

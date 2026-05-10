@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { PublicListing } from "./listing-card";
 import { DISTRICT_COORDS, UB_CENTER } from "@/lib/constants/districts";
 import { PROPERTY_TYPE_LABELS, LISTING_TYPE_LABELS } from "@/lib/constants/listings";
+import { loadGoogleMaps } from "@/lib/google-maps-loader";
 
 function formatPrice(price: number) {
   if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1)}тэрбум`;
@@ -17,145 +18,166 @@ interface ListingMapProps {
   onMarkerClick: (id: string) => void;
 }
 
+interface MarkerEntry {
+  marker: google.maps.marker.AdvancedMarkerElement;
+  el: HTMLDivElement;
+  listingType: PublicListing["listing_type"];
+}
+
+function createMarkerEl(
+  price: number,
+  listingType: PublicListing["listing_type"],
+  active: boolean,
+) {
+  const el = document.createElement("div");
+  applyMarkerStyle(el, price, listingType, active);
+  return el;
+}
+
+function applyMarkerStyle(
+  el: HTMLDivElement,
+  price: number,
+  listingType: PublicListing["listing_type"],
+  active: boolean,
+) {
+  const isSale = listingType === "sale";
+  const bg = active ? "#1d4ed8" : isSale ? "#2563eb" : "#059669";
+  el.textContent = `₮${formatPrice(price)}`;
+  el.style.cssText = `
+    background:${bg};
+    color:white;
+    padding:3px 7px;
+    border-radius:12px;
+    font-size:11px;
+    font-weight:600;
+    white-space:nowrap;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+    border:2px solid ${active ? "#93c5fd" : "transparent"};
+    transform:${active ? "scale(1.15)" : "scale(1)"};
+    transition:all 0.15s;
+    cursor:pointer;
+  `;
+}
+
+function popupHtml(listing: PublicListing) {
+  return `<div style="min-width:190px;font-family:inherit">
+    <p style="font-weight:600;font-size:13px;margin:0 0 4px">${listing.title}</p>
+    <p style="color:#2563eb;font-weight:700;font-size:14px;margin:0 0 4px">₮${formatPrice(listing.price)}</p>
+    <p style="font-size:11px;color:#6b7280;margin:0">
+      ${listing.rooms ? listing.rooms + " өр · " : ""}${listing.area_sqm ? listing.area_sqm + "м² · " : ""}${listing.district ?? ""}
+    </p>
+    <p style="font-size:11px;color:#9ca3af;margin:4px 0 6px">${LISTING_TYPE_LABELS[listing.listing_type] ?? ""} · ${PROPERTY_TYPE_LABELS[listing.property_type] ?? ""}</p>
+    <a href="/listings/${listing.id}" style="display:inline-block;background:#2563eb;color:white;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;text-decoration:none;">Дэлгэрэнгүй →</a>
+  </div>`;
+}
+
 export default function ListingMap({ listings, activeId, onMarkerClick }: ListingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<import("leaflet").Map | null>(null);
-  const markersRef = useRef<Map<string, import("leaflet").Marker>>(new Map());
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const markersRef = useRef<Map<string, MarkerEntry>>(new Map());
 
   useEffect(() => {
+    let cancelled = false;
     if (!mapRef.current) return;
-    // StrictMode-д 2 удаа дуудагдахаас сэргийлэх
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((mapRef.current as any)._leaflet_id) return;
 
-    // Dynamic import — SSR-д ажилладаггүй тул client-д л ачаална
-    import("leaflet").then((L) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (!mapRef.current || (mapRef.current as any)._leaflet_id) return;
-
-      // Leaflet default icon fix for Next.js
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-      });
-
-      const map = L.map(mapRef.current, { zoomControl: true }).setView(UB_CENTER, 12);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
-
-      mapInstanceRef.current = map;
-    });
+    loadGoogleMaps()
+      .then((g) => {
+        if (cancelled || !mapRef.current || mapInstanceRef.current) return;
+        mapInstanceRef.current = new g.maps.Map(mapRef.current, {
+          center: { lat: UB_CENTER[0], lng: UB_CENTER[1] },
+          zoom: 12,
+          mapId: "DEMO_MAP_ID",
+          disableDefaultUI: false,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          clickableIcons: false,
+        });
+        infoWindowRef.current = new g.maps.InfoWindow({ maxWidth: 240 });
+      })
+      .catch((err) => console.error("Google Maps load failed:", err));
 
     return () => {
-      mapInstanceRef.current?.remove();
-      mapInstanceRef.current = null;
+      cancelled = true;
+      markersRef.current.forEach(({ marker }) => (marker.map = null));
       markersRef.current.clear();
+      infoWindowRef.current?.close();
+      infoWindowRef.current = null;
+      mapInstanceRef.current = null;
     };
   }, []);
 
-  // Markers update
   useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
+    let cancelled = false;
+    loadGoogleMaps().then((g) => {
+      if (cancelled) return;
+      const map = mapInstanceRef.current;
+      if (!map) return;
 
-    import("leaflet").then((L) => {
-      // Хуучин markers устгах
-      markersRef.current.forEach((m) => m.remove());
+      markersRef.current.forEach(({ marker }) => (marker.map = null));
       markersRef.current.clear();
 
       listings.forEach((listing) => {
-        const coords = listing.district
+        const base = listing.district
           ? (DISTRICT_COORDS[listing.district] ?? UB_CENTER)
           : UB_CENTER;
-
-        // Жижиг scatter нэмэх — ижил дүүргийн олон зар давхцахгүй
         const jitter = () => (Math.random() - 0.5) * 0.012;
-        const pos: [number, number] = [coords[0] + jitter(), coords[1] + jitter()];
+        const lat = base[0] + jitter();
+        const lng = base[1] + jitter();
 
         const isActive = listing.id === activeId;
-        const isSale = listing.listing_type === "sale";
+        const el = createMarkerEl(listing.price, listing.listing_type, isActive);
 
-        const icon = L.divIcon({
-          className: "",
-          html: `<div style="
-            background:${isActive ? "#1d4ed8" : isSale ? "#2563eb" : "#059669"};
-            color:white;
-            padding:3px 7px;
-            border-radius:12px;
-            font-size:11px;
-            font-weight:600;
-            white-space:nowrap;
-            box-shadow:0 2px 6px rgba(0,0,0,0.25);
-            border:2px solid ${isActive ? "#93c5fd" : "transparent"};
-            transform:${isActive ? "scale(1.15)" : "scale(1)"};
-            transition:all 0.15s;
-          ">₮${formatPrice(listing.price)}</div>`,
-          iconAnchor: [0, 0],
+        const marker = new g.maps.marker.AdvancedMarkerElement({
+          map,
+          position: { lat, lng },
+          content: el,
         });
 
-        const marker = L.marker(pos, { icon })
-          .addTo(map)
-          .bindPopup(
-            `<div style="min-width:190px">
-              <p style="font-weight:600;font-size:13px;margin:0 0 4px">${listing.title}</p>
-              <p style="color:#2563eb;font-weight:700;font-size:14px;margin:0 0 4px">₮${formatPrice(listing.price)}</p>
-              <p style="font-size:11px;color:#6b7280;margin:0">
-                ${listing.rooms ? listing.rooms + " өр · " : ""}${listing.area_sqm ? listing.area_sqm + "м² · " : ""}${listing.district ?? ""}
-              </p>
-              <p style="font-size:11px;color:#9ca3af;margin:4px 0 6px">${LISTING_TYPE_LABELS[listing.listing_type] ?? ""} · ${PROPERTY_TYPE_LABELS[listing.property_type] ?? ""}</p>
-              <a href="/listings/${listing.id}" style="display:inline-block;background:#2563eb;color:white;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;text-decoration:none;">Дэлгэрэнгүй →</a>
-            </div>`,
-            { maxWidth: 240 }
-          )
-          .on("click", () => onMarkerClick(listing.id));
+        marker.addListener("click", () => {
+          if (infoWindowRef.current) {
+            infoWindowRef.current.setContent(popupHtml(listing));
+            infoWindowRef.current.open({ map, anchor: marker });
+          }
+          onMarkerClick(listing.id);
+        });
 
-        markersRef.current.set(listing.id, marker);
+        markersRef.current.set(listing.id, {
+          marker,
+          el,
+          listingType: listing.listing_type,
+        });
       });
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listings]);
 
-  // Active marker highlight
   useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    import("leaflet").then((L) => {
-      markersRef.current.forEach((marker, id) => {
-        const listing = listings.find((l) => l.id === id);
-        if (!listing) return;
-        const isActive = id === activeId;
-        const isSale = listing.listing_type === "sale";
-
-        const icon = L.divIcon({
-          className: "",
-          html: `<div style="
-            background:${isActive ? "#1d4ed8" : isSale ? "#2563eb" : "#059669"};
-            color:white;
-            padding:3px 7px;
-            border-radius:12px;
-            font-size:11px;
-            font-weight:600;
-            white-space:nowrap;
-            box-shadow:0 2px 6px rgba(0,0,0,0.25);
-            border:2px solid ${isActive ? "#93c5fd" : "transparent"};
-            transform:${isActive ? "scale(1.15)" : "scale(1)"};
-          ">₮${formatPrice(listing.price)}</div>`,
-          iconAnchor: [0, 0],
-        });
-        marker.setIcon(icon);
-        if (isActive) marker.openPopup();
-      });
+    markersRef.current.forEach((entry, id) => {
+      const listing = listings.find((l) => l.id === id);
+      if (!listing) return;
+      applyMarkerStyle(entry.el, listing.price, entry.listingType, id === activeId);
     });
+
+    if (activeId) {
+      const entry = markersRef.current.get(activeId);
+      const listing = listings.find((l) => l.id === activeId);
+      if (entry && listing && infoWindowRef.current && mapInstanceRef.current) {
+        infoWindowRef.current.setContent(popupHtml(listing));
+        infoWindowRef.current.open({
+          map: mapInstanceRef.current,
+          anchor: entry.marker,
+        });
+      }
+    }
   }, [activeId, listings]);
 
   return (
-    <div ref={mapRef} className="w-full h-full rounded-none" style={{ minHeight: "100%" }} />
+    <div ref={mapRef} className="w-full h-full" style={{ minHeight: "100%" }} />
   );
 }

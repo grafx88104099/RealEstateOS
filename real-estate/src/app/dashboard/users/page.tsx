@@ -3,7 +3,7 @@ import InviteUserModal from "./invite-modal";
 import { UserActions } from "./user-actions";
 
 const ROLE_LABELS: Record<string, string> = {
-  tenant_admin: "Агентлагийн админ",
+  tenant_admin: "Оффисын админ",
   agent: "Агент",
   consumer: "Хэрэглэгч",
 };

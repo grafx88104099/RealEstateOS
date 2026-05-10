@@ -81,7 +81,7 @@ export default async function CommissionsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Нийт борлуулалт" value={formatPrice(totalSalesValue)} sub={`${items.length} зар`} />
         <StatCard label="Нийт комисс" value={formatPrice(totalCommission)} sub={`${commissionRate}%`} />
-        <StatCard label="Агентлагийн хувь" value={formatPrice(agencyShare)} sub={`${100 - agentSplit}%`} />
+        <StatCard label="Оффисын хувь" value={formatPrice(agencyShare)} sub={`${100 - agentSplit}%`} />
         <StatCard label="Агентуудын хувь" value={formatPrice(agentsShare)} sub={`${agentSplit}%`} />
       </div>
 

@@ -114,7 +114,7 @@ export default async function AllListingsPage({ searchParams }: PageProps) {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-medium uppercase text-gray-500">Гарчиг</th>
-              <th className="text-left px-4 py-3 text-xs font-medium uppercase text-gray-500">Агентлаг</th>
+              <th className="text-left px-4 py-3 text-xs font-medium uppercase text-gray-500">Оффис</th>
               <th className="text-left px-4 py-3 text-xs font-medium uppercase text-gray-500">Статус</th>
               <th className="text-right px-4 py-3 text-xs font-medium uppercase text-gray-500">Үнэ</th>
               <th className="text-right px-4 py-3 text-xs font-medium uppercase text-gray-500">Үзлэг</th>

@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   const salesValue = (soldListings.data ?? []).reduce((s, l) => s + Number(l.price), 0);
 
   const context = `
-Агентлагийн тоймын мэдээлэл:
+Оффисын тоймын мэдээлэл:
 
 Баг:
 - Нийт агент: ${agents.data?.length ?? 0} (идэвхтэй: ${agents.data?.filter((a) => a.is_active).length ?? 0})
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 - Топ дүүргүүд: ${topDistricts || "—"}
 `.trim();
 
-  const systemPrompt = `Та RealEstateOS платформын AI шинжээч юм. Агентлагийн удирдлагад зориулсан долоо хоногийн тойм бичнэ.
+  const systemPrompt = `Та meni платформын AI шинжээч юм. Оффисын удирдлагад зориулсан долоо хоногийн тойм бичнэ.
 
 Дүрэм:
 - Монгол хэлээр бичих

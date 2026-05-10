@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -10,8 +10,11 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // /register?mode=agency бол агентлаг, бусад бүх тохиолдолд consumer
+  // /register?mode=agency бол шинэ wizard руу redirect (хуучин URL backward-compatibility)
   const isAgency = searchParams.get("mode") === "agency";
+  useEffect(() => {
+    if (isAgency) router.replace("/agents/onboard/account");
+  }, [isAgency, router]);
 
   const [form, setForm] = useState({ fullName: "", email: "", password: "", agencyName: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -130,19 +133,29 @@ function RegisterForm() {
     );
   }
 
-  // ── Agency бүртгэл (/register?mode=agency) ────────────────────────
+  // ── Agency бүртгэл шинэ /agents/onboard/account руу шилжсэн.
+  //    Энд хүрсэн тохиолдолд redirecting placeholder харуулна.
+  if (isAgency) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-sm text-gray-500">Оффис нээх хуудас руу шилжүүлж байна…</div>
+      </div>
+    );
+  }
+
+  // ── Хуучин Agency бүртгэл (хэрэглэхгүй, fallback зорилгоор үлдсэн) ────────────────────────
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="w-full max-w-md bg-gray-900 rounded-2xl border border-white/10 p-8">
         <div className="mb-6">
           <Link href="/agent-portal" className="text-sm text-gray-500 hover:text-gray-300 mb-4 inline-block">← Агентын нүүр</Link>
-          <h1 className="text-2xl font-bold text-white">Агентлаг бүртгүүлэх</h1>
-          <p className="text-sm text-gray-400 mt-1">Шинэ агентлагийн бүртгэл</p>
+          <h1 className="text-2xl font-bold text-white">Оффис бүртгүүлэх</h1>
+          <p className="text-sm text-gray-400 mt-1">Шинэ оффисын бүртгэл</p>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1.5">Агентлагийн нэр</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1.5">Оффисын нэр</label>
             <input type="text" value={form.agencyName}
               onChange={(e) => setForm({ ...form, agencyName: e.target.value })}
               required
@@ -186,7 +199,7 @@ function RegisterForm() {
 
           <button type="submit" disabled={loading}
             className="w-full bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
-            {loading ? "Бүртгэж байна..." : "Агентлаг бүртгүүлэх"}
+            {loading ? "Бүртгэж байна..." : "Оффис бүртгүүлэх"}
           </button>
         </form>
 

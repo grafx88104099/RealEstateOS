@@ -26,9 +26,31 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(60);
 
+  const ids = (listings ?? []).map((l) => (l as { id: string }).id);
+  const coverByListing = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: imgs } = await supabaseAdmin
+      .from("listing_images")
+      .select("listing_id, url, is_cover, sort_order")
+      .in("listing_id", ids)
+      .is("deleted_at", null)
+      .order("is_cover", { ascending: false })
+      .order("sort_order", { ascending: true });
+    for (const row of (imgs ?? []) as { listing_id: string; url: string }[]) {
+      if (!coverByListing.has(row.listing_id)) {
+        coverByListing.set(row.listing_id, row.url);
+      }
+    }
+  }
+  const enriched = (listings ?? []).map((l) => ({
+    ...(l as object),
+    cover_image_url: coverByListing.get((l as { id: string }).id) ?? null,
+  }));
+
   return (
     <HomeClient
-      initialListings={listings ?? []}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      initialListings={enriched as any}
       isLoggedIn={!!session}
       dashboardHref={dashboardHref}
       dashboardLabel={dashboardLabel}
