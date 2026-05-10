@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest) {
 
   const { error: updErr } = await supabaseAdmin
     .from("tenants")
-    .update(updates)
+    .update(updates as never)
     .eq("id", tenantId);
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
 

@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   await supabaseAdmin
     .from("tenants")
-    .update({ logo_url: url, updated_at: new Date().toISOString() })
+    .update({ logo_url: url, updated_at: new Date().toISOString() } as never)
     .eq("id", tenantId);
 
   return NextResponse.json({ url });

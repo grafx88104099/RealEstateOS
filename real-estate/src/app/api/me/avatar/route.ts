@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   await supabaseAdmin
     .from("users")
-    .update({ avatar_url: url, updated_at: new Date().toISOString() })
+    .update({ avatar_url: url, updated_at: new Date().toISOString() } as never)
     .eq("id", session.user.id);
 
   return NextResponse.json({ url });

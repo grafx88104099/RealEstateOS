@@ -40,7 +40,7 @@ export async function PATCH(req: NextRequest) {
 
   const { error } = await supabaseAdmin
     .from("users")
-    .update(updates)
+    .update(updates as never)
     .eq("id", session.user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

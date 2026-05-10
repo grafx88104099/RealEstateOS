@@ -46,8 +46,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch cover images in a separate query and merge.
-    const ids = (data ?? []).map((r) => (r as { id: string }).id);
-    let coverByListing = new Map<string, string>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = (data ?? []) as any[];
+    const ids = rows.map((r) => r.id as string);
+    const coverByListing = new Map<string, string>();
     if (ids.length > 0) {
       const { data: imgs } = await supabaseAdmin
         .from("listing_images")
@@ -62,10 +64,10 @@ export async function GET(req: NextRequest) {
         }
       }
     }
-    const enriched = (data ?? []).map((r) => {
-      const id = (r as { id: string }).id;
-      return { ...r, cover_image_url: coverByListing.get(id) ?? null };
-    });
+    const enriched = rows.map((r) => ({
+      ...r,
+      cover_image_url: coverByListing.get(r.id as string) ?? null,
+    }));
     return NextResponse.json({ listings: enriched });
   }
 
