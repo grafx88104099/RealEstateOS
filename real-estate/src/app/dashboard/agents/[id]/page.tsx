@@ -5,6 +5,7 @@ import { decodeJWT } from "@/lib/utils/jwt";
 import { UserActions } from "../../users/user-actions";
 import { InquiryStatusBadge } from "@/components/inquiries/status-badge";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/constants/listings";
+import AgentProfileEditor from "./agent-profile-editor";
 
 function fmtPrice(p: number) {
   if (p >= 1_000_000_000) return `${(p / 1_000_000_000).toFixed(1)} тэрбум`;
@@ -30,13 +31,16 @@ export default async function DashboardAgentDetailPage({
   const supabase = await createSupabaseServer();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
-  const tenantId = decodeJWT(session.access_token).tenant_id as string;
+  const jwt = decodeJWT(session.access_token);
+  const tenantId = jwt.tenant_id as string;
+  const userRole = jwt.user_role as string | undefined;
+  const canEdit = userRole === "tenant_admin" || userRole === "super_admin";
 
   const { id } = await params;
 
   const { data: agent } = await supabase
     .from("users")
-    .select("id, email, full_name, role, is_active, created_at, avatar_url, phone, tenant_id")
+    .select("id, email, full_name, role, is_active, created_at, avatar_url, phone, tenant_id, metadata")
     .eq("id", id)
     .is("deleted_at", null)
     .single();
@@ -44,6 +48,19 @@ export default async function DashboardAgentDetailPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const a = agent as any;
   if (!a || a.tenant_id !== tenantId || a.role !== "agent") notFound();
+
+  const meta = (a.metadata ?? {}) as {
+    bio?: string;
+    experience_years?: number | null;
+    specialties?: string[];
+    languages?: string[];
+  };
+  const bio = meta.bio ?? "";
+  const experienceYears = meta.experience_years ?? null;
+  const specialties = Array.isArray(meta.specialties) ? meta.specialties : [];
+  const languages = Array.isArray(meta.languages) ? meta.languages : [];
+  const hasProfileInfo =
+    bio || experienceYears != null || specialties.length > 0 || languages.length > 0;
 
   const [
     totalListings, activeListings, soldListings,
@@ -113,6 +130,11 @@ export default async function DashboardAgentDetailPage({
             }`}>
               {a.is_active ? "Идэвхтэй" : "Хаагдсан"}
             </span>
+            {experienceYears != null && experienceYears > 0 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">
+                {experienceYears} жилийн туршлага
+              </span>
+            )}
             <span className="text-xs text-gray-500">
               Бүртгэлтэй: {new Date(a.created_at).toLocaleDateString("mn-MN")}
             </span>
@@ -128,10 +150,70 @@ export default async function DashboardAgentDetailPage({
             </div>
           </dl>
         </div>
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {canEdit && (
+            <AgentProfileEditor
+              agentId={a.id}
+              initial={{
+                full_name: a.full_name ?? "",
+                phone: a.phone ?? "",
+                avatar_url: a.avatar_url ?? "",
+                bio,
+                experience_years: experienceYears,
+                specialties,
+                languages,
+              }}
+            />
+          )}
           <UserActions user={a} />
         </div>
       </div>
+
+      {/* Танилцуулга */}
+      {(hasProfileInfo || canEdit) && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+          <h2 className="font-semibold text-gray-900 text-sm mb-3">Танилцуулга</h2>
+          {hasProfileInfo ? (
+            <div className="space-y-4">
+              {bio && (
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{bio}</p>
+              )}
+              {(specialties.length > 0 || languages.length > 0) && (
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  {specialties.length > 0 && (
+                    <div>
+                      <dt className="text-xs text-gray-500 mb-1.5">Мэргэшил</dt>
+                      <dd className="flex flex-wrap gap-1.5">
+                        {specialties.map((s) => (
+                          <span key={s} className="inline-flex items-center bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-1 rounded-md">
+                            {s}
+                          </span>
+                        ))}
+                      </dd>
+                    </div>
+                  )}
+                  {languages.length > 0 && (
+                    <div>
+                      <dt className="text-xs text-gray-500 mb-1.5">Ярьдаг хэл</dt>
+                      <dd className="flex flex-wrap gap-1.5">
+                        {languages.map((l) => (
+                          <span key={l} className="inline-flex items-center bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-md">
+                            {l}
+                          </span>
+                        ))}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">
+              Танилцуулга оруулаагүй байна. Дээрх <span className="font-medium text-indigo-600">"Профайл засах"</span> товчоор танилцуулга, мэргэшил, ярьдаг хэлээ нэмнэ үү.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

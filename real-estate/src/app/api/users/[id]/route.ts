@@ -1,6 +1,7 @@
-// PATCH /api/users/[id] — is_active toggle
+// PATCH /api/users/[id] — is_active toggle + profile fields
 //   - tenant_admin: only their own tenant's non-admin users
 //   - super_admin: any user across all tenants
+//   Profile fields (bio, experience_years, specialties, languages) хадгалагдана metadata JSONB-д
 // DELETE /api/users/[id] — soft delete user (tenant_admin only)
 
 import { NextRequest, NextResponse } from "next/server";
@@ -21,7 +22,7 @@ export async function PATCH(
 
   const { data: target } = await supabaseAdmin
     .from("users")
-    .select("id, tenant_id, role")
+    .select("id, tenant_id, role, metadata")
     .eq("id", id)
     .single();
 
@@ -44,9 +45,44 @@ export async function PATCH(
     return NextResponse.json({ error: "Super admin-ийг хаах боломжгүй" }, { status: 403 });
   }
 
+  // Update payload — зөвхөн өгсөн талбаруудыг өөрчилнө
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  if (typeof body.is_active === "boolean") update.is_active = body.is_active;
+  if (typeof body.full_name === "string") update.full_name = body.full_name.trim().slice(0, 200);
+  if (typeof body.phone === "string") update.phone = body.phone.trim().slice(0, 50) || null;
+
+  // Профайл талбарууд → metadata JSONB-д нэгтгэнэ
+  const currentMeta = (target as { metadata?: Record<string, unknown> }).metadata ?? {};
+  const metaPatch: Record<string, unknown> = {};
+  if (typeof body.bio === "string") metaPatch.bio = body.bio.trim().slice(0, 1000);
+  if (body.experience_years === null || typeof body.experience_years === "number") {
+    metaPatch.experience_years =
+      typeof body.experience_years === "number"
+        ? Math.max(0, Math.min(80, Math.floor(body.experience_years)))
+        : null;
+  }
+  if (Array.isArray(body.specialties)) {
+    metaPatch.specialties = body.specialties
+      .filter((s): s is string => typeof s === "string")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 8);
+  }
+  if (Array.isArray(body.languages)) {
+    metaPatch.languages = body.languages
+      .filter((s): s is string => typeof s === "string")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 6);
+  }
+  if (Object.keys(metaPatch).length > 0) {
+    update.metadata = { ...currentMeta, ...metaPatch };
+  }
+
   const { error } = await supabaseAdmin
     .from("users")
-    .update({ is_active: body.is_active as boolean })
+    .update(update as never)
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
