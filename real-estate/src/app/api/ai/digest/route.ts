@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 - Топ дүүргүүд: ${topDistricts || "—"}
 `.trim();
 
-  const systemPrompt = `Та meni платформын AI шинжээч юм. Оффисын удирдлагад зориулсан долоо хоногийн тойм бичнэ.
+  const systemPrompt = `Та nemi платформын AI шинжээч юм. Оффисын удирдлагад зориулсан долоо хоногийн тойм бичнэ.
 
 Дүрэм:
 - Монгол хэлээр бичих

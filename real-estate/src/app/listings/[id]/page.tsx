@@ -107,7 +107,7 @@ export default async function ListingDetailPage({
             </svg>
           </Link>
           <Link href="/" className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-xl tracking-tight lowercase hover:text-blue-600 transition-colors">
-            meni
+            nemi
           </Link>
           <div className="flex-1" />
           {session ? (

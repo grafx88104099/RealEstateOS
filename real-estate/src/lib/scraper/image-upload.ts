@@ -35,7 +35,7 @@ export async function uploadListingImages(
       const res = await fetch(src, {
         headers: {
           "User-Agent":
-            "meni-Bot/1.0 (+https://meni.mn/contact)",
+            "nemi-Bot/1.0 (+https://nemi.mn/contact)",
           ...(opts.referer ? { Referer: opts.referer } : {}),
         },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),

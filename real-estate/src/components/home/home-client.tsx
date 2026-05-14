@@ -121,7 +121,7 @@ export default function HomeClient({
             <span
               className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-2xl tracking-tight lowercase leading-none"
             >
-              meni
+              nemi
             </span>
           </a>
 
@@ -348,14 +348,14 @@ export default function HomeClient({
       <footer className="flex-shrink-0 border-t border-gray-200 bg-white">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-gray-500">
           <span className="font-[family-name:var(--font-onest)] font-extrabold text-gray-700 text-base lowercase tracking-tight leading-none">
-            meni
+            nemi
           </span>
-          <span className="hidden sm:inline">© {new Date().getFullYear()} meni — Үл хөдлөх хөрөнгийн зар</span>
+          <span className="hidden sm:inline">© {new Date().getFullYear()} nemi — Үл хөдлөх хөрөнгийн зар</span>
           <span className="flex-1" />
           <a href="/about" className="hover:text-gray-900 transition-colors">Бидний тухай</a>
           <a href="/terms" className="hover:text-gray-900 transition-colors">Үйлчилгээний нөхцөл</a>
           <a href="/privacy" className="hover:text-gray-900 transition-colors">Нууцлал</a>
-          <a href="mailto:hello@meni.mn" className="hover:text-gray-900 transition-colors">Холбоо барих</a>
+          <a href="mailto:hello@nemi.mn" className="hover:text-gray-900 transition-colors">Холбоо барих</a>
           <a
             href="/agents"
             className="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"

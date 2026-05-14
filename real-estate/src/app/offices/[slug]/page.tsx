@@ -64,7 +64,7 @@ export default async function OfficePublicPage({
             href="/"
             className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-2xl tracking-tight lowercase leading-none hover:text-indigo-600 transition-colors"
           >
-            meni
+            nemi
           </Link>
           <div className="flex-1" />
           <Link
@@ -218,9 +218,9 @@ export default async function OfficePublicPage({
       <footer className="border-t border-gray-200 bg-white">
         <div className="max-w-screen-xl mx-auto px-6 py-4 text-[12px] text-gray-500 flex flex-wrap items-center gap-x-6 gap-y-2">
           <Link href="/" className="font-[family-name:var(--font-onest)] font-extrabold text-gray-700 text-base lowercase tracking-tight leading-none hover:text-gray-900">
-            meni
+            nemi
           </Link>
-          <span>© {new Date().getFullYear()} meni</span>
+          <span>© {new Date().getFullYear()} nemi</span>
           <span className="flex-1" />
           <Link href="/" className="hover:text-gray-900">Нийтийн хайлт</Link>
           <Link href="/agents" className="hover:text-gray-900">Агент</Link>

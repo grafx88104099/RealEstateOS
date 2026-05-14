@@ -50,7 +50,7 @@ export default function SuperAdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-900">
       <div className="w-full max-w-sm bg-gray-800 rounded-2xl border border-gray-700 p-8">
         <div className="mb-8 text-center">
-          <h1 className="font-[family-name:var(--font-onest)] text-3xl font-extrabold text-white tracking-tight lowercase">meni</h1>
+          <h1 className="font-[family-name:var(--font-onest)] text-3xl font-extrabold text-white tracking-tight lowercase">nemi</h1>
           <p className="text-xs text-red-400 mt-1 font-medium tracking-wide uppercase">
             Super Admin
           </p>

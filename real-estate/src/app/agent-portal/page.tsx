@@ -30,7 +30,7 @@ export default async function AgentPortalPage() {
             href="/agents"
             className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-2xl tracking-tight lowercase leading-none hover:text-indigo-600 transition-colors"
           >
-            meni
+            nemi
           </Link>
           <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-semibold">Pro</span>
           <div className="flex-1" />

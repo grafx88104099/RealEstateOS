@@ -10,7 +10,7 @@ export default function AgentsLandingPage() {
             href="/"
             className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-2xl tracking-tight lowercase leading-none hover:text-indigo-600 transition-colors"
           >
-            meni
+            nemi
           </Link>
           <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-semibold">Pro</span>
           <div className="flex-1" />
@@ -133,12 +133,12 @@ export default function AgentsLandingPage() {
             href="/"
             className="font-[family-name:var(--font-onest)] font-extrabold text-gray-700 text-base lowercase tracking-tight leading-none hover:text-gray-900 transition-colors"
           >
-            meni
+            nemi
           </Link>
-          <span className="hidden sm:inline">© {new Date().getFullYear()} meni</span>
+          <span className="hidden sm:inline">© {new Date().getFullYear()} nemi</span>
           <span className="flex-1" />
           <Link href="/" className="hover:text-gray-900 transition-colors">Нийтийн хуудас</Link>
-          <a href="mailto:hello@meni.mn" className="hover:text-gray-900 transition-colors">Холбоо барих</a>
+          <a href="mailto:hello@nemi.mn" className="hover:text-gray-900 transition-colors">Холбоо барих</a>
         </div>
       </footer>
     </div>

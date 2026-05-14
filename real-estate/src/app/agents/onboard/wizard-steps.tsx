@@ -61,7 +61,7 @@ export function WizardHeader({ current }: { current: WizardStep }) {
           href="/agents"
           className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-xl tracking-tight lowercase hover:text-indigo-600 transition-colors"
         >
-          meni
+          nemi
         </Link>
         <WizardSteps current={current} />
       </div>

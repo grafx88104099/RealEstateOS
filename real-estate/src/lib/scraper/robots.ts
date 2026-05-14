@@ -10,7 +10,7 @@ interface Rule {
   path: string;
 }
 
-const UA = "meni-Bot";
+const UA = "nemi-Bot";
 
 async function loadRobots(host: string): Promise<Rule[]> {
   const cached = cache.get(host);

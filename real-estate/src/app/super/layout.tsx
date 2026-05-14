@@ -26,7 +26,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
     <div className="min-h-screen bg-gray-50 flex">
       <aside className="w-56 bg-white border-r border-gray-200 flex flex-col">
         <div className="px-5 py-5 border-b border-gray-100">
-          <span className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-xl tracking-tight lowercase">meni</span>
+          <span className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-xl tracking-tight lowercase">nemi</span>
           <p className="text-xs text-red-500 mt-0.5 font-medium">Super Admin</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">

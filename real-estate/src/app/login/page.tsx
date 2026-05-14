@@ -74,7 +74,7 @@ function LoginForm() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Нэвтрэх</h1>
-          <p className="font-[family-name:var(--font-onest)] text-base font-extrabold text-gray-700 mt-1 tracking-tight lowercase">meni</p>
+          <p className="font-[family-name:var(--font-onest)] text-base font-extrabold text-gray-700 mt-1 tracking-tight lowercase">nemi</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">

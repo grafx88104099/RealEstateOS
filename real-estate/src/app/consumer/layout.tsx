@@ -28,7 +28,7 @@ export default async function ConsumerLayout({ children }: { children: React.Rea
             href="/"
             className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-2xl tracking-tight lowercase leading-none hover:text-indigo-600 transition-colors"
           >
-            meni
+            nemi
           </Link>
           <div className="flex-1" />
           <span className="text-sm text-gray-600 hidden sm:inline truncate max-w-[220px]">

@@ -19,7 +19,7 @@ const onest = Onest({
 });
 
 export const metadata: Metadata = {
-  title: "meni — Үл хөдлөх хөрөнгийн зар",
+  title: "nemi — Үл хөдлөх хөрөнгийн зар",
   description: "Монгол хэлээр AI хайлттай үл хөдлөх хөрөнгийн зарын платформ",
 };
 
