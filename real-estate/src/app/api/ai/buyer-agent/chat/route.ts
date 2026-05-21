@@ -6,6 +6,7 @@
 import { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { withAuth, isAuthError } from "@/lib/middleware/auth";
+import { aiCostGuard } from "@/lib/ai/cost-guard";
 import { supabaseAdmin as typedAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { searchListings } from "@/lib/ai/search";
@@ -107,6 +108,9 @@ const SYSTEM_PROMPT = `Та "nemi" платформын **AI Buyer Agent** (ху
 export async function POST(req: NextRequest) {
   const auth = await withAuth(req, ["consumer", "agent", "tenant_admin"]);
   if (isAuthError(auth)) return auth;
+
+  const gate = await aiCostGuard(req, { route: "buyer-agent-chat", identifier: auth.userId });
+  if (!gate.ok) return gate.response;
 
   let body: ChatRequestBody;
   try {
@@ -366,15 +370,27 @@ async function executeTool(
     case "draft_offer": {
       const listingId = args.listing_id as string;
       const amount = args.amount as number;
-      if (!listingId || !amount) return { ok: false, error: "Дутуу аргумент" };
+      if (!listingId || !amount || amount <= 0 || amount > 1e12) {
+        return { ok: false, error: "Дутуу аргумент эсвэл буруу үнэ" };
+      }
 
+      // Listing шалгах: deleted_at IS NULL, status='active', tenant нь active
       const { data: listing, error: lErr } = await supabaseAdmin
         .from("listings")
-        .select("id, title, price, agent_id, tenant_id")
+        .select("id, title, price, agent_id, tenant_id, status, deleted_at, tenant:tenants(status, deleted_at)")
         .eq("id", listingId)
+        .is("deleted_at", null)
         .single();
       if (lErr || !listing) {
-        return { ok: false, error: "Зар олдсонгүй" };
+        return { ok: false, error: "Зар олдсонгүй эсвэл устгагдсан" };
+      }
+      if (listing.status !== "active") {
+        return { ok: false, error: `Энэ зар идэвхгүй (${listing.status}). Офер илгээх боломжгүй.` };
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const t = (listing as any).tenant;
+      if (!t || t.deleted_at || t.status !== "active") {
+        return { ok: false, error: "Зарын оффис түр хаагдсан. Дараа дахин оролдоно уу." };
       }
 
       const { data: offer, error: oErr } = await supabaseAdmin
@@ -412,9 +428,21 @@ async function executeTool(
 
       const { data: listing } = await supabaseAdmin
         .from("listings")
-        .select("agent_id, tenant_id")
+        .select("agent_id, tenant_id, status, deleted_at, tenant:tenants(status, deleted_at)")
         .eq("id", listingId)
+        .is("deleted_at", null)
         .single();
+      if (!listing) {
+        return { ok: false, error: "Зар олдсонгүй эсвэл устгагдсан" };
+      }
+      if (listing.status !== "active") {
+        return { ok: false, error: `Энэ зар идэвхгүй (${listing.status}). Үзлэг захиалах боломжгүй.` };
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const t2 = (listing as any).tenant;
+      if (!t2 || t2.deleted_at || t2.status !== "active") {
+        return { ok: false, error: "Оффис түр хаагдсан. Дараа дахин оролдоно уу." };
+      }
 
       const { data: viewing, error } = await supabaseAdmin
         .from("viewings")

@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, isAuthError } from "@/lib/middleware/auth";
+import { aiCostGuard } from "@/lib/ai/cost-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
@@ -10,6 +11,9 @@ const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
 export async function POST(req: NextRequest) {
   const auth = await withAuth(req, ["super_admin", "tenant_admin", "agent"]);
   if (isAuthError(auth)) return auth;
+
+  const gate = await aiCostGuard(req, { route: "market-analysis", identifier: auth.userId });
+  if (!gate.ok) return gate.response;
 
   const tenantId = auth.tenantId;
 

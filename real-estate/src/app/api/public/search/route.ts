@@ -1,9 +1,20 @@
 // POST /api/public/search — auth шаардлагагүй AI хайлт
+// Аюулгүй байдал: aiCostGuard-аар IP rate-limit + daily USD cap.
+// Энэ нь public endpoint тул abuse-аас хамгаалах хатуу хязгаартай.
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateEmbedding } from "@/lib/ai/embedding";
+import { aiCostGuard, recordAiSpend } from "@/lib/ai/cost-guard";
 
 export async function POST(req: NextRequest) {
+  // Public endpoint — illet хатуу rate limit (1 минутад 5 удаа)
+  const gate = await aiCostGuard(req, {
+    route: "public-search",
+    rateWindowSeconds: 60,
+    rateLimitMax: 5,
+  });
+  if (!gate.ok) return gate.response;
+
   let body: Record<string, unknown>;
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
@@ -18,6 +29,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { embedding, tokens_used } = await generateEmbedding(query.trim());
+  // text-embedding-3-small ~$0.02/1M tokens → token бүр ~0.000002 cents
+  recordAiSpend(tokens_used * 0.000002 * 100).catch(() => {});
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabaseAdmin.rpc as any)("match_listings_public", {

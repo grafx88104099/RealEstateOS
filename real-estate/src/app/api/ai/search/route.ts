@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, isAuthError } from "@/lib/middleware/auth";
+import { aiCostGuard } from "@/lib/ai/cost-guard";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { searchListings, SearchFilters } from "@/lib/ai/search";
 import { Redis } from "@upstash/redis";
@@ -33,6 +34,9 @@ export async function POST(req: NextRequest) {
     "consumer",
   ]);
   if (isAuthError(auth)) return auth;
+
+  const gate = await aiCostGuard(req, { route: "search", identifier: auth.userId });
+  if (!gate.ok) return gate.response;
 
   // 2. Rate limiting
   const rateLimitKey = `ai:search:${auth.userId}`;
