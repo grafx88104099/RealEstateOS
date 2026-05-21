@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint + Typecheck + Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: real-estate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: real-estate/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: Build (no env required for typecheck)
+        env:
+          # Dummy values so Next can build — runtime not needed here.
+          NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "dummy"
+          SUPABASE_SERVICE_ROLE_KEY: "dummy"
+          NEXT_PUBLIC_SITE_URL: "https://www.nemi.mn"
+          PLATFORM_TENANT_ID: "00000000-0000-0000-0000-000000000000"
+        run: npm run build
