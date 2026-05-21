@@ -1,12 +1,12 @@
 // GET /api/health — uptime monitor шалгана.
-// DB ping + Redis ping (хэрэв тохируулсан бол). 200 = OK, 503 = degraded.
+// DB ping + Redis REST API direct call (no client init issues).
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const checks: Record<string, "ok" | "fail"> = {};
+  const checks: Record<string, "ok" | "fail" | "skip"> = {};
   let allOk = true;
 
   // 1. DB ping
@@ -19,20 +19,23 @@ export async function GET() {
     allOk = false;
   }
 
-  // 2. Redis check — set/get with TTL
-  if (process.env.UPSTASH_REDIS_REST_URL) {
+  // 2. Redis — REST API-аар шууд ping хийнэ (Redis client init-аас зайлсхийнэ)
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (redisUrl && redisToken) {
     try {
-      const { Redis } = await import("@upstash/redis");
-      const redis = Redis.fromEnv();
-      const key = "health:ping";
-      await redis.set(key, Date.now(), { ex: 60 });
-      const v = await redis.get(key);
-      checks.redis = v ? "ok" : "fail";
-      if (!v) allOk = false;
+      const res = await fetch(`${redisUrl}/ping`, {
+        headers: { Authorization: `Bearer ${redisToken}` },
+        cache: "no-store",
+      });
+      checks.redis = res.ok ? "ok" : "fail";
+      if (!res.ok) allOk = false;
     } catch {
       checks.redis = "fail";
       allOk = false;
     }
+  } else {
+    checks.redis = "skip";
   }
 
   return NextResponse.json(
