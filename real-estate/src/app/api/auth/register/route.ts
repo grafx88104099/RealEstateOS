@@ -10,11 +10,41 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
+import { Redis } from "@upstash/redis";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/resend";
 import { verifyEmailTemplate } from "@/lib/email/templates";
 
+// IP-based rate limit — 1 хаягаас 10 минутад дээд тал нь 5 бүртгэл
+const RATE_WINDOW_SECONDS = 10 * 60;
+const RATE_LIMIT_MAX = 5;
+const redis =
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? Redis.fromEnv()
+    : null;
+
+function clientIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
 export async function POST(req: NextRequest) {
+  // Rate limit (best-effort — Redis байхгүй бол алгасна)
+  if (redis) {
+    const key = `register:${clientIp(req)}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, RATE_WINDOW_SECONDS);
+    if (count > RATE_LIMIT_MAX) {
+      return NextResponse.json(
+        { error: "Хэт олон удаа оролдлоо. Хэсэг хүлээгээд дахин үзнэ үү." },
+        { status: 429 },
+      );
+    }
+  }
+
   let body: Record<string, unknown>;
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
@@ -38,28 +68,11 @@ export async function POST(req: NextRequest) {
     .eq("email", String(email))
     .maybeSingle();
 
+  // Email enumeration-аас сэргийлэхийн тулд бүх "duplicate" хариу адил.
+  // Хэрэглэгчид ямар бүртгэлтэй байгааг ил тод хэлэхгүй.
   if (existing) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existingRole = (existing as any).role as string;
-    const labels: Record<string, string> = {
-      agent: "оффисын агент",
-      tenant_admin: "оффисын админ",
-      super_admin: "системийн админ",
-      consumer: "энгийн хэрэглэгч",
-    };
-    const label = labels[existingRole] ?? existingRole;
-    if (mode === "consumer" && existingRole !== "consumer") {
-      return NextResponse.json({
-        error: `Энэ имэйл хаягаар ${label}-ийн бүртгэлтэй байна. Энгийн хэрэглэгчийн бүртгэл үүсгэхийн тулд өөр имэйл хаяг ашиглана уу.`,
-      }, { status: 409 });
-    }
-    if (mode === "agency" && existingRole === "consumer") {
-      return NextResponse.json({
-        error: "Энэ имэйл хаягаар энгийн хэрэглэгчийн бүртгэлтэй байна. Шинэ оффис нээхийн тулд өөр имэйл хаяг ашиглана уу.",
-      }, { status: 409 });
-    }
     return NextResponse.json({
-      error: `Энэ имэйл хаягаар ${label}-ийн бүртгэлтэй байна.`,
+      error: "Энэ имэйл хаяг аль хэдийн ашиглагдсан байна. Нэвтрэх эсвэл нууц үг сэргээх хэсгийг үзнэ үү.",
     }, { status: 409 });
   }
 

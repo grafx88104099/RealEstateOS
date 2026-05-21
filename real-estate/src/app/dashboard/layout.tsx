@@ -67,33 +67,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // Status хуудас үзэж байгаа tenant_admin-д sidebar нуух (минимал UI)
   const showSidebar = role === "super_admin" || (tenantStatus === "active" && !isStatusPath);
 
-  // Notification count
-  const { count: newInquiryCount } = await supabase
-    .from("inquiries")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "new")
-    .is("deleted_at", null);
-
-  const notifCount = newInquiryCount ?? 0;
-
-  // Оффисын мэдээлэл (sidebar header-т харуулах зориулалттай)
-  const tenantId = payload.tenant_id as string | undefined;
-  let tenantName = "Оффис";
-  let tenantLogo: string | null = null;
-  if (tenantId) {
-    const { data: tRow } = await supabaseAdmin
-      .from("tenants")
-      .select("name, logo_url")
-      .eq("id", tenantId)
-      .single();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tenantName = ((tRow as any)?.name) || tenantName;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tenantLogo = ((tRow as any)?.logo_url) || null;
-  }
-
   if (!showSidebar) {
-    // Pending/rejected/suspended хуудсыг sidebar-гүй минимал хүрээнд харуулна
+    // Pending/rejected/suspended хуудсыг sidebar-гүй минимал хүрээнд харуулна — DB query хийхгүй
     return (
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white border-b border-gray-200">
@@ -110,6 +85,37 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <main>{children}</main>
       </div>
     );
+  }
+
+  // Sidebar render үед л dashboard-ын ачаалал шаардлагатай query-уудыг гүйцэтгэнэ
+  const tenantId = payload.tenant_id as string | undefined;
+
+  // Notification count — tenant_admin-д tenant_id-ээр scope хийнэ (cross-tenant leak-аас сэргийлнэ)
+  let inquiryQuery = supabase
+    .from("inquiries")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "new")
+    .is("deleted_at", null);
+  if (role === "tenant_admin" && tenantId) {
+    inquiryQuery = inquiryQuery.eq("tenant_id", tenantId);
+  }
+  const { count: newInquiryCount } = await inquiryQuery;
+  const notifCount = newInquiryCount ?? 0;
+
+  // Оффисын мэдээлэл (sidebar header)
+  let tenantName = "Оффис";
+  let tenantLogo: string | null = null;
+  if (tenantId) {
+    const { data: tRow } = await supabaseAdmin
+      .from("tenants")
+      .select("name, logo_url")
+      .eq("id", tenantId)
+      .is("deleted_at", null)
+      .single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tenantName = ((tRow as any)?.name) || tenantName;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tenantLogo = ((tRow as any)?.logo_url) || null;
   }
 
   return (

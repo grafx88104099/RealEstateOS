@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     .from("tenants")
     .select("id, name, status")
     .eq("id", tenantId)
+    .is("deleted_at", null)
     .single();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,15 +77,19 @@ export async function POST(req: NextRequest) {
     .from("users")
     .select("email, full_name")
     .eq("id", session.user.id)
-    .single();
+    .is("deleted_at", null)
+    .maybeSingle();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ow = owner as any;
+  if (!ow?.email) {
+    return NextResponse.json({ error: "Хэрэглэгчийн мэдээлэл олдсонгүй" }, { status: 404 });
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
   const verifyUrl = `${siteUrl}/verify-email?token=${token}`;
   const tpl = verifyEmailTemplate({
     officeName: t.name,
-    ownerName: ow?.full_name ?? "",
+    ownerName: ow.full_name ?? "",
     verifyUrl,
   });
 

@@ -43,13 +43,26 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#039;");
 }
 
+// Хэрэглэгчийн оруулсан текстээс URL-уудыг нь хасна — phishing/spam payload-аас sa-г хамгаална.
+// http(s):// эсвэл www. эхэлсэн линкүүдийг "[link removed]" гэж орлуулна.
+function stripUrls(s: string): string {
+  return s
+    .replace(/\bhttps?:\/\/\S+/gi, "[link removed]")
+    .replace(/\bwww\.\S+/gi, "[link removed]");
+}
+
+// Subject талбарт CRLF орохоос сэргийлнэ (header injection).
+function sanitizeSubject(s: string): string {
+  return s.replace(/[\r\n]+/g, " ").slice(0, 200);
+}
+
 // 1. Verify email — бүртгэлийн дараа эхлээд илгээгдэнэ
 export function verifyEmailTemplate(args: {
   officeName: string;
   ownerName: string;
   verifyUrl: string;
 }) {
-  const subject = `${args.officeName} — имэйлээ баталгаажуулна уу`;
+  const subject = sanitizeSubject(`${args.officeName} — имэйлээ баталгаажуулна уу`);
   const html = wrap(
     subject,
     `
@@ -78,7 +91,7 @@ export function applicationReceivedTemplate(args: {
   officeName: string;
   ownerName: string;
 }) {
-  const subject = `${args.officeName} — хүсэлт хүлээж авлаа`;
+  const subject = sanitizeSubject(`${args.officeName} — хүсэлт хүлээж авлаа`);
   const html = wrap(
     subject,
     `
@@ -103,7 +116,7 @@ export function approvedTemplate(args: {
   ownerName: string;
   dashboardUrl: string;
 }) {
-  const subject = `${args.officeName} — таны хүсэлт зөвшөөрөгдлөө 🎉`;
+  const subject = sanitizeSubject(`${args.officeName} — таны хүсэлт зөвшөөрөгдлөө 🎉`);
   const html = wrap(
     subject,
     `
@@ -129,7 +142,7 @@ export function rejectedTemplate(args: {
   ownerName: string;
   reason: string;
 }) {
-  const subject = `${args.officeName} — хүсэлтийн талаар`;
+  const subject = sanitizeSubject(`${args.officeName} — хүсэлтийн талаар`);
   const html = wrap(
     subject,
     `
@@ -158,17 +171,25 @@ export function superAdminNotifyTemplate(args: {
   phone?: string;
   message?: string;
 }) {
-  const subject = `Шинэ оффисын хүсэлт: ${args.officeName}`;
+  const safeOffice = stripUrls(args.officeName).slice(0, 200);
+  const subject = sanitizeSubject(`Шинэ оффисын хүсэлт: ${safeOffice}`);
+  // Хэрэглэгчийн оруулсан message-аас URL-уудыг хасах нь sa-руу phishing/spam linkээс хамгаална.
+  const safeMessage = args.message ? stripUrls(args.message) : "";
   const html = wrap(
     subject,
     `
     <h1 style="font-size:20px;margin:0 0 16px;color:#111827;">Шинэ оффисын хүсэлт</h1>
+    <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:6px;margin:0 0 16px;">
+      <p style="margin:0;font-size:12px;color:#92400e;">
+        ⚠ Доорх мэдээллийг <strong>хэрэглэгч өөрөө</strong> оруулсан. Үнэн эсэхийг шалгах ёстой.
+      </p>
+    </div>
     <table style="width:100%;font-size:14px;border-collapse:collapse;margin-bottom:20px;">
-      <tr><td style="padding:6px 0;color:#6b7280;width:120px;">Оффис</td><td style="padding:6px 0;font-weight:600;">${escapeHtml(args.officeName)}</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;width:120px;">Оффис</td><td style="padding:6px 0;font-weight:600;">${escapeHtml(safeOffice)}</td></tr>
       <tr><td style="padding:6px 0;color:#6b7280;">Эзэмшигч</td><td style="padding:6px 0;">${escapeHtml(args.ownerName)}</td></tr>
       <tr><td style="padding:6px 0;color:#6b7280;">Имэйл</td><td style="padding:6px 0;">${escapeHtml(args.ownerEmail)}</td></tr>
-      ${args.phone ? `<tr><td style="padding:6px 0;color:#6b7280;">Утас</td><td style="padding:6px 0;">${escapeHtml(args.phone)}</td></tr>` : ""}
-      ${args.message ? `<tr><td style="padding:6px 0;color:#6b7280;vertical-align:top;">Тэмдэглэл</td><td style="padding:6px 0;white-space:pre-wrap;">${escapeHtml(args.message)}</td></tr>` : ""}
+      ${args.phone ? `<tr><td style="padding:6px 0;color:#6b7280;">Утас</td><td style="padding:6px 0;">${escapeHtml(stripUrls(args.phone))}</td></tr>` : ""}
+      ${safeMessage ? `<tr><td style="padding:6px 0;color:#6b7280;vertical-align:top;">Тэмдэглэл</td><td style="padding:6px 0;white-space:pre-wrap;">${escapeHtml(safeMessage)}</td></tr>` : ""}
     </table>
     <div style="text-align:center;margin:24px 0;">
       ${button(args.reviewUrl, "Шалгаж зөвшөөрөх")}
