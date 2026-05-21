@@ -19,13 +19,16 @@ export async function GET() {
     allOk = false;
   }
 
-  // 2. Redis ping (хэрэв тохируулсан бол)
+  // 2. Redis check — set/get with TTL
   if (process.env.UPSTASH_REDIS_REST_URL) {
     try {
       const { Redis } = await import("@upstash/redis");
       const redis = Redis.fromEnv();
-      await redis.ping();
-      checks.redis = "ok";
+      const key = "health:ping";
+      await redis.set(key, Date.now(), { ex: 60 });
+      const v = await redis.get(key);
+      checks.redis = v ? "ok" : "fail";
+      if (!v) allOk = false;
     } catch {
       checks.redis = "fail";
       allOk = false;
