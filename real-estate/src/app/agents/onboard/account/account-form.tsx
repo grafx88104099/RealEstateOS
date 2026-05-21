@@ -16,6 +16,8 @@ export default function AccountForm() {
     fullName: "",
     email: "",
     password: "",
+    phone: "",
+    message: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,6 +37,8 @@ export default function AccountForm() {
           password: form.password,
           full_name: form.fullName.trim(),
           agency_name: form.officeName.trim(),
+          applicant_phone: form.phone.trim(),
+          applicant_message: form.message.trim(),
         }),
       });
       const data = await res.json();
@@ -46,7 +50,7 @@ export default function AccountForm() {
       });
       if (signInErr) throw new Error(signInErr.message);
 
-      router.push("/agents/onboard/office");
+      router.push("/verify-email/pending");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Алдаа гарлаа");
@@ -93,6 +97,29 @@ export default function AccountForm() {
           placeholder="admin@office.mn"
           className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
         />
+      </Field>
+
+      <Field label="Утасны дугаар">
+        <input
+          type="tel"
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          maxLength={50}
+          placeholder="9911 1234"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+        />
+      </Field>
+
+      <Field label="Танилцуулга (заавал биш)">
+        <textarea
+          value={form.message}
+          onChange={(e) => setForm({ ...form, message: e.target.value })}
+          rows={3}
+          maxLength={1000}
+          placeholder="Танай оффисын тухай, чиглэл, туршлага г.м."
+          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none resize-y"
+        />
+        <p className="text-[11px] text-gray-400 mt-1">Манай админ багт хүсэлтийг хурдан шалгахад тус болно</p>
       </Field>
 
       <Field label="Нууц үг" required>

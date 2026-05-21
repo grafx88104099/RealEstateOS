@@ -25,7 +25,7 @@ export default async function SuperTenantDetailPage({
 
   const { data: tenant } = await supabaseAdmin
     .from("tenants")
-    .select("id, name, slug, subscription, is_active, requires_listing_review, logo_url, settings, created_at")
+    .select("id, name, slug, subscription, is_active, requires_listing_review, logo_url, settings, created_at, status, email_verified_at, approved_at, rejection_reason, applicant_phone, applicant_message")
     .eq("id", id)
     .is("deleted_at", null)
     .single();
@@ -85,11 +85,28 @@ export default async function SuperTenantDetailPage({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                tenant.is_active ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-              }`}>
-                {tenant.is_active ? "Идэвхтэй" : "Хаагдсан"}
-              </span>
+              {(() => {
+                const labels: Record<string, string> = {
+                  pending_email: "Имэйл хүлээж буй",
+                  pending_approval: "Зөвшөөрөл хүлээж буй",
+                  active: "Идэвхтэй",
+                  rejected: "Татгалзсан",
+                  suspended: "Түр хаагдсан",
+                };
+                const colors: Record<string, string> = {
+                  pending_email: "bg-gray-100 text-gray-600",
+                  pending_approval: "bg-amber-50 text-amber-700",
+                  active: "bg-emerald-50 text-emerald-700",
+                  rejected: "bg-rose-50 text-rose-700",
+                  suspended: "bg-orange-50 text-orange-700",
+                };
+                const s = tenant.status ?? (tenant.is_active ? "active" : "suspended");
+                return (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[s] ?? "bg-gray-100 text-gray-600"}`}>
+                    {labels[s] ?? s}
+                  </span>
+                );
+              })()}
               <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                 tenant.subscription === "pro" ? "bg-purple-50 text-purple-700"
                 : tenant.subscription === "enterprise" ? "bg-blue-50 text-blue-700"
@@ -130,13 +147,52 @@ export default async function SuperTenantDetailPage({
         <Stat label="Зарагдсан" value={soldRes.count ?? 0} />
       </div>
 
+      {/* Хүсэлтийн мэдээлэл (pending үед чухал) */}
+      {(tenant.applicant_phone || tenant.applicant_message || tenant.email_verified_at || tenant.rejection_reason) && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+          <h2 className="font-semibold text-gray-900 text-sm mb-4">Хүсэлтийн мэдээлэл</h2>
+          <dl className="space-y-3 text-sm">
+            {tenant.applicant_phone && (
+              <div className="flex gap-3">
+                <dt className="w-32 flex-shrink-0 text-xs text-gray-500">Утас</dt>
+                <dd className="text-gray-900">{tenant.applicant_phone}</dd>
+              </div>
+            )}
+            {tenant.applicant_message && (
+              <div className="flex gap-3">
+                <dt className="w-32 flex-shrink-0 text-xs text-gray-500">Тэмдэглэл</dt>
+                <dd className="text-gray-900 whitespace-pre-wrap flex-1">{tenant.applicant_message}</dd>
+              </div>
+            )}
+            {tenant.email_verified_at && (
+              <div className="flex gap-3">
+                <dt className="w-32 flex-shrink-0 text-xs text-gray-500">Имэйл баталгаажсан</dt>
+                <dd className="text-gray-900">{new Date(tenant.email_verified_at).toLocaleString("mn-MN")}</dd>
+              </div>
+            )}
+            {tenant.approved_at && (
+              <div className="flex gap-3">
+                <dt className="w-32 flex-shrink-0 text-xs text-gray-500">Зөвшөөрсөн</dt>
+                <dd className="text-gray-900">{new Date(tenant.approved_at).toLocaleString("mn-MN")}</dd>
+              </div>
+            )}
+            {tenant.rejection_reason && (
+              <div className="flex gap-3">
+                <dt className="w-32 flex-shrink-0 text-xs text-rose-500">Татгалзсан шалтгаан</dt>
+                <dd className="text-rose-800 bg-rose-50 px-3 py-2 rounded-md whitespace-pre-wrap flex-1 text-xs">{tenant.rejection_reason}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      )}
+
       {/* Удирдлагын самбар */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
         <h2 className="font-semibold text-gray-900 text-sm mb-4">Удирдлага</h2>
         <TenantActions
           id={id}
           name={tenant.name}
-          isActive={tenant.is_active}
+          status={tenant.status ?? (tenant.is_active ? "active" : "suspended")}
           subscription={tenant.subscription}
         />
         <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">

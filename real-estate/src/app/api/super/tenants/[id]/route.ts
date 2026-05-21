@@ -5,6 +5,7 @@ import { withAuth, isAuthError } from "@/lib/middleware/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ALLOWED_SUBS = new Set(["free", "pro", "enterprise"]);
+const ALLOWED_STATUS_SET = new Set(["active", "suspended"]); // sa зөвхөн идэвхтэй ↔ түр хаах гар үйлдэл
 
 export async function PATCH(
   req: NextRequest,
@@ -29,6 +30,11 @@ export async function PATCH(
   if (typeof body.name === "string") {
     const v = body.name.trim();
     if (v.length > 0 && v.length <= 200) updates.name = v;
+  }
+  // Status: зөвхөн active/suspended (approve/reject өөр endpoint ашиглана)
+  if (typeof body.status === "string" && ALLOWED_STATUS_SET.has(body.status)) {
+    updates.status = body.status;
+    updates.is_active = body.status === "active";
   }
 
   if (Object.keys(updates).length === 0) {

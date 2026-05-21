@@ -1,9 +1,24 @@
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import LogoutButton from "@/components/auth/logout-button";
 import { decodeJWT } from "@/lib/utils/jwt";
+
+// Tenant status → энэ status-д харагдах хуудас
+const STATUS_PAGE: Record<string, string> = {
+  pending_email: "/verify-email/pending",
+  pending_approval: "/dashboard/pending",
+  rejected: "/dashboard/rejected",
+  suspended: "/dashboard/suspended",
+};
+
+const STATUS_PATHS = new Set([
+  "/dashboard/pending",
+  "/dashboard/rejected",
+  "/dashboard/suspended",
+]);
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseServer();
@@ -19,6 +34,38 @@ export default async function DashboardLayout({ children }: { children: React.Re
     };
     redirect(roleHomes[role] ?? "/login");
   }
+
+  const hdrs = await headers();
+  const pathname = hdrs.get("x-next-pathname") ?? "";
+  const isStatusPath = STATUS_PATHS.has(pathname);
+
+  // Tenant verification gate — зөвхөн tenant_admin-д хамаарна (super_admin бүх tenant-д хандана)
+  let tenantStatus: string = "active";
+  if (role === "tenant_admin") {
+    const tenantId = payload.tenant_id as string | undefined;
+    if (tenantId) {
+      const { data: tRow } = await supabaseAdmin
+        .from("tenants")
+        .select("status")
+        .eq("id", tenantId)
+        .single();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tenantStatus = ((tRow as any)?.status) || "active";
+    }
+
+    if (tenantStatus !== "active") {
+      const target = STATUS_PAGE[tenantStatus];
+      if (target && target !== pathname && !isStatusPath) {
+        redirect(target);
+      }
+    } else if (isStatusPath) {
+      // Аль хэдийн approve хийгдсэн tenant_admin status хуудас үзэх хэрэггүй
+      redirect("/dashboard");
+    }
+  }
+
+  // Status хуудас үзэж байгаа tenant_admin-д sidebar нуух (минимал UI)
+  const showSidebar = role === "super_admin" || (tenantStatus === "active" && !isStatusPath);
 
   // Notification count
   const { count: newInquiryCount } = await supabase
@@ -43,6 +90,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
     tenantName = ((tRow as any)?.name) || tenantName;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenantLogo = ((tRow as any)?.logo_url) || null;
+  }
+
+  if (!showSidebar) {
+    // Pending/rejected/suspended хуудсыг sidebar-гүй минимал хүрээнд харуулна
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200">
+          <div className="max-w-screen-xl mx-auto px-6 py-4 flex items-center justify-between">
+            <Link href="/" className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-xl tracking-tight lowercase">
+              nemi
+            </Link>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-gray-500 truncate max-w-[200px]">{session.user.email}</p>
+              <LogoutButton />
+            </div>
+          </div>
+        </header>
+        <main>{children}</main>
+      </div>
+    );
   }
 
   return (

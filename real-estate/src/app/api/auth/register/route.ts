@@ -9,14 +9,17 @@
 //   Зөвхөн admin client-ээр users row үүсгэж чадна (supabaseAdmin).
 
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/email/resend";
+import { verifyEmailTemplate } from "@/lib/email/templates";
 
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { email, password, full_name, mode, agency_name } = body;
+  const { email, password, full_name, mode, agency_name, applicant_phone, applicant_message } = body;
 
   if (!email || !password || !full_name) {
     return NextResponse.json({ error: "email, password, full_name шаардлагатай" }, { status: 400 });
@@ -150,6 +153,9 @@ export async function POST(req: NextRequest) {
       .insert({
         name: String(agency_name),
         slug,
+        status: "pending_email",
+        applicant_phone: typeof applicant_phone === "string" ? applicant_phone.trim().slice(0, 50) || null : null,
+        applicant_message: typeof applicant_message === "string" ? applicant_message.trim().slice(0, 1000) || null : null,
       } as never)
       .select()
       .single();
@@ -159,20 +165,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: tenantErr.message }, { status: 500 });
     }
 
+    const tenantId = (tenant as { id: string }).id;
+
     const { error: dbErr } = await supabaseAdmin.from("users").insert({
       id: userId,
-      tenant_id: (tenant as { id: string }).id,
+      tenant_id: tenantId,
       role: "tenant_admin",
       email: String(email),
       full_name: String(full_name),
     } as never);
 
     if (dbErr) {
-      await supabaseAdmin.from("tenants").delete().eq("id", (tenant as { id: string }).id);
+      await supabaseAdmin.from("tenants").delete().eq("id", tenantId);
       await supabaseAdmin.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: dbErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ mode: "agency", redirect: "/dashboard" }, { status: 201 });
+    // Verification token үүсгэх + email илгээх
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await supabaseAdmin.from("tenant_email_tokens").insert({
+      token,
+      tenant_id: tenantId,
+      expires_at: expiresAt,
+    } as never);
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nemi.mn";
+    const verifyUrl = `${siteUrl}/verify-email?token=${token}`;
+    const tpl = verifyEmailTemplate({
+      officeName: String(agency_name),
+      ownerName: String(full_name),
+      verifyUrl,
+    });
+    // Email алдаа гарвал register амжилттай хэвээр үлдээнэ — хэрэглэгч resend-ээр дахин авч болно
+    sendEmail({ to: String(email), subject: tpl.subject, html: tpl.html }).catch(() => {});
+
+    return NextResponse.json({ mode: "agency", redirect: "/verify-email/pending" }, { status: 201 });
   }
 }
