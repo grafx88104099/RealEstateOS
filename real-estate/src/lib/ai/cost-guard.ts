@@ -89,8 +89,65 @@ export async function aiCostGuard(req: NextRequest, opts: GuardOptions): Promise
 // usd_cents — нэгж бол cent (e.g. $0.0012 → 0.12 cents → round to 1)
 export async function recordAiSpend(usdCents: number): Promise<void> {
   if (!redis) return;
-  const key = todayKey();
-  await redis.incrby(key, Math.max(0, Math.round(usdCents)));
-  // 48 цагт expire (UTC өдөр шилжихэд автоматаар цэвэрлэх)
-  await redis.expire(key, 48 * 3600);
+  try {
+    const key = todayKey();
+    await redis.incrby(key, Math.max(0, Math.round(usdCents)));
+    // 48 цагт expire (UTC өдөр шилжихэд автоматаар цэвэрлэх)
+    await redis.expire(key, 48 * 3600);
+  } catch (err) {
+    console.warn("[cost-guard] recordAiSpend failed", err);
+  }
+}
+
+// Token-аас өртөг тооцох (cents-ээр)
+// Зөвхөн approximate — input/output token-ыг тус тусд нь хувааж тооцох нь илүү нарийвчилалтай.
+export interface ModelPricing {
+  input_cents_per_1k: number;  // input token-ын үнэ
+  output_cents_per_1k: number; // output token-ын үнэ
+}
+
+// 2026 онд OpenAI үнэ цэн (USD cents per 1K tokens)
+export const MODEL_PRICES: Record<string, ModelPricing> = {
+  "gpt-4o-mini":            { input_cents_per_1k: 0.015, output_cents_per_1k: 0.060 },
+  "gpt-4o":                 { input_cents_per_1k: 0.250, output_cents_per_1k: 1.000 },
+  "text-embedding-3-small": { input_cents_per_1k: 0.002, output_cents_per_1k: 0 },
+  "text-embedding-3-large": { input_cents_per_1k: 0.013, output_cents_per_1k: 0 },
+};
+
+export function estimateCostCents(args: {
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+}): number {
+  const price = MODEL_PRICES[args.model] ?? MODEL_PRICES["gpt-4o-mini"];
+  // Хэрэв input/output тус тусдаа байхгүй бол total-аас ~30% input гэж тооцно
+  if (args.inputTokens != null || args.outputTokens != null) {
+    return (
+      ((args.inputTokens ?? 0) / 1000) * price.input_cents_per_1k +
+      ((args.outputTokens ?? 0) / 1000) * price.output_cents_per_1k
+    );
+  }
+  const total = args.totalTokens ?? 0;
+  const inputApprox = total * 0.3;
+  const outputApprox = total * 0.7;
+  return (
+    (inputApprox / 1000) * price.input_cents_per_1k +
+    (outputApprox / 1000) * price.output_cents_per_1k
+  );
+}
+
+// Helper: дуудуул дарсны дараа OpenAI usage-аас тооцож хадгална
+export async function recordOpenAiUsage(
+  model: string,
+  usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined | null,
+): Promise<void> {
+  if (!usage) return;
+  const cents = estimateCostCents({
+    model,
+    inputTokens: usage.prompt_tokens,
+    outputTokens: usage.completion_tokens,
+    totalTokens: usage.total_tokens,
+  });
+  await recordAiSpend(cents);
 }

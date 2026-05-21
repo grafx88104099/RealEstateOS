@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, isAuthError } from "@/lib/middleware/auth";
-import { aiCostGuard } from "@/lib/ai/cost-guard";
+import { aiCostGuard, recordOpenAiUsage } from "@/lib/ai/cost-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
+    recordOpenAiUsage("gpt-4o-mini", data.usage).catch(() => {});
     const content = data.choices?.[0]?.message?.content;
     const result: LeadScoreResult = JSON.parse(content);
 

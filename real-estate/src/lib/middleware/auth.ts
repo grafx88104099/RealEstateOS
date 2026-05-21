@@ -24,12 +24,17 @@ export async function withAuth(
     const origin = req.headers.get("origin") ?? "";
     const referer = req.headers.get("referer") ?? "";
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+    // ALLOWED_ORIGINS env-аас нэмэлт origin зөвшөөрнө (CSV хэлбэр, preview deploy үед хэрэгтэй)
+    const extraOrigins = (process.env.ALLOWED_ORIGINS ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    // Dev-д localhost зөвшөөрнө — production-д ALLOWED_ORIGINS-аар л
+    const devOrigins = process.env.NODE_ENV === "production"
+      ? []
+      : ["http://localhost:3000", "http://localhost:62486"];
     const allowedOrigins = new Set<string>(
-      [
-        siteUrl,
-        "http://localhost:3000",
-        "http://localhost:62486",
-      ].filter(Boolean),
+      [siteUrl, ...extraOrigins, ...devOrigins].filter(Boolean),
     );
 
     let valid = false;
