@@ -32,16 +32,20 @@ function clientIp(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest) {
-  // Rate limit (best-effort — Redis байхгүй бол алгасна)
+  // Rate limit (best-effort — Redis unreachable бол алгасна)
   if (redis) {
-    const key = `register:${clientIp(req)}`;
-    const count = await redis.incr(key);
-    if (count === 1) await redis.expire(key, RATE_WINDOW_SECONDS);
-    if (count > RATE_LIMIT_MAX) {
-      return NextResponse.json(
-        { error: "Хэт олон удаа оролдлоо. Хэсэг хүлээгээд дахин үзнэ үү." },
-        { status: 429 },
-      );
+    try {
+      const key = `register:${clientIp(req)}`;
+      const count = await redis.incr(key);
+      if (count === 1) await redis.expire(key, RATE_WINDOW_SECONDS);
+      if (count > RATE_LIMIT_MAX) {
+        return NextResponse.json(
+          { error: "Хэт олон удаа оролдлоо. Хэсэг хүлээгээд дахин үзнэ үү." },
+          { status: 429 },
+        );
+      }
+    } catch (err) {
+      console.warn("[register] rate limit skipped (redis error):", err);
     }
   }
 

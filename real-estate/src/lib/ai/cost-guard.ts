@@ -48,33 +48,38 @@ export type GuardResult =
 export async function aiCostGuard(req: NextRequest, opts: GuardOptions): Promise<GuardResult> {
   if (!redis) return { ok: true }; // Local dev redis-гүй
 
-  // 1. Daily cap check (cents-д хадгална)
-  const spentCents = (await redis.get<number>(todayKey())) ?? 0;
-  if (spentCents / 100 >= DAILY_CAP_USD) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { error: "AI үйлчилгээний өдрийн хязгаар дуусчээ. Маргааш дахин үзнэ үү." },
-        { status: 429 },
-      ),
-    };
-  }
+  try {
+    // 1. Daily cap check (cents-д хадгална)
+    const spentCents = (await redis.get<number>(todayKey())) ?? 0;
+    if (spentCents / 100 >= DAILY_CAP_USD) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: "AI үйлчилгээний өдрийн хязгаар дуусчээ. Маргааш дахин үзнэ үү." },
+          { status: 429 },
+        ),
+      };
+    }
 
-  // 2. Rate limit
-  const id = opts.identifier ?? clientIp(req);
-  const window = opts.rateWindowSeconds ?? DEFAULT_RATE_WINDOW_SECONDS;
-  const max = opts.rateLimitMax ?? DEFAULT_RATE_LIMIT_MAX;
-  const rateKey = `ai:rate:${opts.route}:${id}`;
-  const count = await redis.incr(rateKey);
-  if (count === 1) await redis.expire(rateKey, window);
-  if (count > max) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { error: `Хэт олон удаа дуудлаа (${max}/${window}с). Хэсэг хүлээгээд дахин үзнэ үү.` },
-        { status: 429 },
-      ),
-    };
+    // 2. Rate limit
+    const id = opts.identifier ?? clientIp(req);
+    const window = opts.rateWindowSeconds ?? DEFAULT_RATE_WINDOW_SECONDS;
+    const max = opts.rateLimitMax ?? DEFAULT_RATE_LIMIT_MAX;
+    const rateKey = `ai:rate:${opts.route}:${id}`;
+    const count = await redis.incr(rateKey);
+    if (count === 1) await redis.expire(rateKey, window);
+    if (count > max) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: `Хэт олон удаа дуудлаа (${max}/${window}с). Хэсэг хүлээгээд дахин үзнэ үү.` },
+          { status: 429 },
+        ),
+      };
+    }
+  } catch (err) {
+    // Redis unreachable — guard алгасна (graceful degrade, AI хариу буцаасаар хэвээр)
+    console.warn(`[ai-cost-guard] skipped (redis error)`, { route: opts.route, err });
   }
 
   return { ok: true };

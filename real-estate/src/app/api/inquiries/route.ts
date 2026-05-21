@@ -73,16 +73,20 @@ export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
 
-  // Rate limit IP-аар (anonymous болон authenticated хоёуланд)
+  // Rate limit IP-аар (anonymous болон authenticated хоёуланд) — Redis fail бол алгасна
   if (redis) {
-    const key = `inquiry:${user?.id ?? clientIp(req)}`;
-    const count = await redis.incr(key);
-    if (count === 1) await redis.expire(key, RATE_WINDOW_SECONDS);
-    if (count > RATE_LIMIT_MAX) {
-      return NextResponse.json(
-        { error: "Хэт олон удаа илгээллээ. 1 цагийн дараа дахин үзнэ үү." },
-        { status: 429 },
-      );
+    try {
+      const key = `inquiry:${user?.id ?? clientIp(req)}`;
+      const count = await redis.incr(key);
+      if (count === 1) await redis.expire(key, RATE_WINDOW_SECONDS);
+      if (count > RATE_LIMIT_MAX) {
+        return NextResponse.json(
+          { error: "Хэт олон удаа илгээллээ. 1 цагийн дараа дахин үзнэ үү." },
+          { status: 429 },
+        );
+      }
+    } catch (err) {
+      console.warn("[inquiry] rate limit skipped (redis error):", err);
     }
   }
 

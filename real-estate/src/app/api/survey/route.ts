@@ -36,16 +36,20 @@ function arr(v: unknown, max: number, itemMax: number): string[] {
 }
 
 export async function POST(req: NextRequest) {
-  // Rate limit (best-effort)
+  // Rate limit (best-effort — Redis unreachable бол алгасна, route 500 хийхгүй)
   if (redis) {
-    const key = `survey:${clientIp(req)}`;
-    const count = await redis.incr(key);
-    if (count === 1) await redis.expire(key, RATE_WINDOW_SECONDS);
-    if (count > RATE_LIMIT_MAX) {
-      return NextResponse.json(
-        { error: "Хэт олон удаа илгээлээ. 1 цагийн дараа дахин үзнэ үү." },
-        { status: 429 },
-      );
+    try {
+      const key = `survey:${clientIp(req)}`;
+      const count = await redis.incr(key);
+      if (count === 1) await redis.expire(key, RATE_WINDOW_SECONDS);
+      if (count > RATE_LIMIT_MAX) {
+        return NextResponse.json(
+          { error: "Хэт олон удаа илгээлээ. 1 цагийн дараа дахин үзнэ үү." },
+          { status: 429 },
+        );
+      }
+    } catch (err) {
+      console.warn("[survey] rate limit skipped (redis error):", err);
     }
   }
 
