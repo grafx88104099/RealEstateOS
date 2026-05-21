@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 
   // Try to get runs and stats — gracefully handle missing tables
   let runs: unknown[] = [];
-  let stats: Record<string, Record<string, number>> = {};
+  const stats: Record<string, Record<string, number>> = {};
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

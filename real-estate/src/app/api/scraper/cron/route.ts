@@ -142,7 +142,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ jobs_enqueued: due.length, error: "unknown site" });
   }
 
-  let scanResult, ingestStats;
+  let scanResult;
+  // ingestStats нь try/catch + later assign-аас үүднэ — TS тооцоог нь let гэж шаардана
+  // eslint-disable-next-line prefer-const, @typescript-eslint/no-unused-vars
+  let ingestStats: Awaited<ReturnType<typeof ingestNewScraped>> | undefined = undefined;
   try {
     scanResult = await runScan(siteKey, mode, target.tenant_id);
   } catch (err) {

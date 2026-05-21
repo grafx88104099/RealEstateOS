@@ -22,6 +22,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
   const hasEmbedding = !!listing.embedding;
   const inquiryCount = inquiryCountRes.count ?? 0;
+  // Server-rendered тул Date.now() ашиглах нь OK (render бүрт refresh)
+  // eslint-disable-next-line react-hooks/purity
   const daysOnMarket = Math.max(0, Math.floor((Date.now() - new Date(listing.created_at).getTime()) / 86400000));
 
   return (

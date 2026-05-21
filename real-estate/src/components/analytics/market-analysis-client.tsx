@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { safeFormatLine } from "@/lib/utils/safe-markdown";
 
 interface DistrictStat {
   name: string;
@@ -152,17 +153,17 @@ export function MarketAnalysisClient() {
         <div className="px-6 py-4 text-sm text-gray-700 leading-relaxed">
           {analysis.split("\n").map((line, i) => {
             if (!line.trim()) return <br key={i} />;
-            const formatted = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+            const formatted = safeFormatLine(line);
             if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
               return (
                 <div key={i} className="flex gap-2 ml-2 my-0.5">
                   <span className="text-purple-400 shrink-0">-</span>
-                  <span dangerouslySetInnerHTML={{ __html: formatted.replace(/^[-*]\s*/, "") }} />
+                  <span dangerouslySetInnerHTML={{ __html: safeFormatLine(line.replace(/^[\s-*]+/, "")) }} />
                 </div>
               );
             }
             if (line.trim().startsWith("#")) {
-              return <p key={i} className="font-semibold text-gray-900 mt-3 mb-1" dangerouslySetInnerHTML={{ __html: formatted.replace(/^#+\s*/, "") }} />;
+              return <p key={i} className="font-semibold text-gray-900 mt-3 mb-1" dangerouslySetInnerHTML={{ __html: safeFormatLine(line.replace(/^#+\s*/, "")) }} />;
             }
             return <p key={i} dangerouslySetInnerHTML={{ __html: formatted }} />;
           })}

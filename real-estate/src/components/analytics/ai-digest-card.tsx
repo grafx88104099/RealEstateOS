@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { safeFormatLine } from "@/lib/utils/safe-markdown";
 
 export function AiDigestCard() {
   const [digest, setDigest] = useState<string | null>(null);
@@ -70,14 +71,12 @@ export function AiDigestCard() {
           <div className="prose prose-sm prose-gray max-w-none text-sm text-gray-700 leading-relaxed [&_strong]:text-gray-900 [&_ul]:space-y-1 [&_li]:text-gray-600">
             {digest.split("\n").map((line, i) => {
               if (!line.trim()) return <br key={i} />;
-              // Bold text
-              const formatted = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-              // Bullet points
+              const formatted = safeFormatLine(line);
               if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
                 return (
                   <div key={i} className="flex gap-2 ml-2">
                     <span className="text-purple-400 shrink-0">-</span>
-                    <span dangerouslySetInnerHTML={{ __html: formatted.replace(/^[-*]\s*/, "") }} />
+                    <span dangerouslySetInnerHTML={{ __html: safeFormatLine(line.replace(/^[\s-*]+/, "")) }} />
                   </div>
                 );
               }

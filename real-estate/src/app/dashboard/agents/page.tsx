@@ -200,7 +200,7 @@ export default async function DashboardAgentsPage({
                     {q || statusFilter ? "Тохирох агент олдсонгүй" : "Агент урих шаардлагатай"}
                   </p>
                   {!q && !statusFilter && (
-                    <p className="text-xs text-gray-400">Дээрх "Агент урих" товчийг ашиглана уу</p>
+                    <p className="text-xs text-gray-400">Дээрх &quot;Агент урих&quot; товчийг ашиглана уу</p>
                   )}
                 </td>
               </tr>

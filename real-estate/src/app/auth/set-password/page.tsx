@@ -31,6 +31,7 @@ export default function SetPasswordPage() {
     const refreshToken = params.get("refresh_token");
 
     if (!accessToken || !refreshToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("Урилгын холбоос буруу байна. Шинэ урилга авна уу.");
       return;
     }

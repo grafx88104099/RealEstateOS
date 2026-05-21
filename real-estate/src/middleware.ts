@@ -11,7 +11,7 @@ const ROUTE_ROLES: Record<string, AllowedRole[]> = {
 };
 
 export async function middleware(req: NextRequest) {
-  let response = NextResponse.next({ request: req });
+  const response = NextResponse.next({ request: req });
   response.headers.set("x-next-pathname", req.nextUrl.pathname);
 
   const supabase = createServerClient(

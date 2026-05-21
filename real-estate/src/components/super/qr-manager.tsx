@@ -16,7 +16,7 @@ export default function QRManager({ link }: { link: QrLink }) {
   const [targetUrl, setTargetUrl] = useState(link.target_url);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [svgPreview, setSvgPreview] = useState("");
+  const [, setSvgPreview] = useState("");
 
   const qrUrl = `${link.base_url}/go/${link.slug}`;
 

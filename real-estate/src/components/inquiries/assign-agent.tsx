@@ -14,7 +14,7 @@ interface AssignResult {
   confidence: number;
 }
 
-export function AssignAgent({ inquiryId, currentAgentName }: AssignAgentProps) {
+export function AssignAgent({ inquiryId }: AssignAgentProps) {
   const router = useRouter();
   const [result, setResult] = useState<AssignResult | null>(null);
   const [loading, setLoading] = useState(false);

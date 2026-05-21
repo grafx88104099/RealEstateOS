@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ListingCard, type PublicListing } from "./listing-card";
 import { DISTRICTS } from "@/lib/constants/listings";
@@ -117,13 +118,13 @@ export default function HomeClient({
       <header className="flex-shrink-0 sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-gray-200/70">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3.5 flex items-center gap-4">
           {/* Logo */}
-          <a href="/" className="flex items-center flex-shrink-0">
+          <Link href="/" className="flex items-center flex-shrink-0">
             <span
               className="font-[family-name:var(--font-onest)] font-extrabold text-gray-900 text-2xl tracking-tight lowercase leading-none"
             >
               nemi
             </span>
-          </a>
+          </Link>
 
           <div className="flex-1" />
 

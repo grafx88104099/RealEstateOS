@@ -14,7 +14,12 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 type Params = { params: Promise<{ id: string }> };
 
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB per file
+// Tenant нэг бүрт image storage limit (GB-аар). Free plan default = 2 GB.
+const TENANT_QUOTA_BYTES = parseInt(
+  process.env.TENANT_IMAGE_QUOTA_BYTES ?? `${2 * 1024 * 1024 * 1024}`,
+  10,
+);
 
 // Listing-ийн tenant_id шалгаж, агентын хувьд агент эзэмшил шалгана
 async function assertListingAccess(
@@ -70,6 +75,23 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (!files.length) {
     return NextResponse.json({ error: "Зураг сонгоно уу" }, { status: 400 });
+  }
+
+  // Tenant-ийн нийт image storage квота
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: usageRows } = await (supabaseAdmin as any)
+    .from("listing_images")
+    .select("file_size")
+    .eq("tenant_id", access.listing.tenant_id)
+    .is("deleted_at", null);
+  const usedBytes = ((usageRows ?? []) as { file_size: number | null }[])
+    .reduce((acc, r) => acc + (r.file_size ?? 0), 0);
+  const incomingBytes = files.reduce((acc, f) => acc + (f.size ?? 0), 0);
+  if (usedBytes + incomingBytes > TENANT_QUOTA_BYTES) {
+    return NextResponse.json(
+      { error: `Зургийн нийт хэмжээ хязгаараас давсан (${Math.round(TENANT_QUOTA_BYTES / 1024 / 1024 / 1024)} GB).` },
+      { status: 413 },
+    );
   }
 
   // Get current max sort_order

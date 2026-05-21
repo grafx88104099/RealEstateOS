@@ -67,6 +67,8 @@ export default async function AnalyticsPage() {
   const listings = listingsRes.data ?? [];
   const inquiries = inquiriesRes.data ?? [];
 
+  // Server-rendered тул Date.now() OK
+  // eslint-disable-next-line react-hooks/purity
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
   const agentMetrics: AgentMetric[] = (agents ?? []).map((agent) => {

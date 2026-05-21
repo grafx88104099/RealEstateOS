@@ -209,7 +209,7 @@ export default async function DashboardAgentDetailPage({
             </div>
           ) : (
             <p className="text-sm text-gray-400">
-              Танилцуулга оруулаагүй байна. Дээрх <span className="font-medium text-indigo-600">"Профайл засах"</span> товчоор танилцуулга, мэргэшил, ярьдаг хэлээ нэмнэ үү.
+              Танилцуулга оруулаагүй байна. Дээрх <span className="font-medium text-indigo-600">&quot;Профайл засах&quot;</span> товчоор танилцуулга, мэргэшил, ярьдаг хэлээ нэмнэ үү.
             </p>
           )}
         </div>

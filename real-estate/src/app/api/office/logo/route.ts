@@ -7,7 +7,8 @@ import { decodeJWT } from "@/lib/utils/jwt";
 
 const BUCKET = "office-logos";
 const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+// SVG-г зөвшөөрөхгүй — JS оруулсан SVG нь stored XSS-руу шилжих эрсдэлтэй.
+const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 
 async function ensureBucket() {
   const { data: buckets } = await supabaseAdmin.storage.listBuckets();
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Файл хэт том (5MB-аас бага)" }, { status: 400 });
   }
   if (!ALLOWED.includes(file.type)) {
-    return NextResponse.json({ error: "Зөвхөн зураг (jpg/png/webp/svg)" }, { status: 400 });
+    return NextResponse.json({ error: "Зөвхөн зураг (jpg/png/webp)" }, { status: 400 });
   }
 
   await ensureBucket();

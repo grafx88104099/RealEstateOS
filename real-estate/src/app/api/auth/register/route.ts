@@ -65,11 +65,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "agency_name шаардлагатай" }, { status: 400 });
   }
 
-  // Ижил имэйл байгаа эсэхийг шалгах. Бүртгэлтэй бол одоогийн role-оор тохирох мэдээлэл буцаана.
+  // Ижил имэйл байгаа эсэхийг шалгах (soft-deleted-ыг тооцохгүй — тэр имэйлийг дахин ашиглах боломжтой)
   const { data: existing } = await supabaseAdmin
     .from("users")
     .select("id, email, role")
     .eq("email", String(email))
+    .is("deleted_at", null)
     .maybeSingle();
 
   // Email enumeration-аас сэргийлэхийн тулд бүх "duplicate" хариу адил.

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const slug = `${String(source.title).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}-copy-${Date.now()}`;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { data: newListing, error: insertError } = await supabaseAdmin
     .from("listings")
     .insert({

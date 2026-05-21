@@ -17,6 +17,37 @@ export async function withAuth(
   req: NextRequest,
   allowedRoles: AllowedRole[]
 ): Promise<AuthContext | NextResponse> {
+  // CSRF guard — state-changing хүсэлтийн Origin/Referer нь манай domain-аас ирсэн эсэхийг шалгана.
+  // Lax cookie default нь top-level form POST-ыг хааж чадахгүй.
+  const method = req.method.toUpperCase();
+  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+    const origin = req.headers.get("origin") ?? "";
+    const referer = req.headers.get("referer") ?? "";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+    const allowedOrigins = new Set<string>(
+      [
+        siteUrl,
+        "http://localhost:3000",
+        "http://localhost:62486",
+      ].filter(Boolean),
+    );
+
+    let valid = false;
+    if (origin && allowedOrigins.has(origin)) valid = true;
+    else if (referer) {
+      try {
+        const refOrigin = new URL(referer).origin;
+        if (allowedOrigins.has(refOrigin)) valid = true;
+      } catch {/* invalid referer */}
+    }
+    // Хоёулаа байхгүй — same-origin fetch гэж үздэг (mobile app зэрэгт түвэгтэй болохоос сэргийлнэ)
+    if (!origin && !referer) valid = true;
+
+    if (!valid) {
+      return NextResponse.json({ error: "Origin mismatch" }, { status: 403 });
+    }
+  }
+
   const supabase = await createSupabaseServer();
 
   // getUser() — token-ыг Supabase Auth-руу хүсэлт явуулж баталгаажуулна (getSession() нь cookie уншдаг тул spoof-д өртөмтгий)

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-/* eslint-disable @next/next/no-html-link-for-pages */
+ 
 
 interface ListingItem {
   id: string;

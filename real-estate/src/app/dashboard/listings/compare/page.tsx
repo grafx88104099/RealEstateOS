@@ -27,7 +27,7 @@ export default async function ComparePage({
         <Link href="/dashboard/listings" className="text-sm text-gray-500 hover:text-gray-700">← Зарууд</Link>
         <div className="mt-8 text-center py-12 bg-white rounded-xl border border-gray-200">
           <p className="text-gray-400 text-sm">Харьцуулахын тулд 2-4 зар сонгоно уу</p>
-          <p className="text-xs text-gray-300 mt-1">Зарууд хуудаснаас checkbox-оор сонгоод "Харьцуулах" товч дарна</p>
+          <p className="text-xs text-gray-300 mt-1">Зарууд хуудаснаас checkbox-оор сонгоод &quot;Харьцуулах&quot; товч дарна</p>
         </div>
       </div>
     );
