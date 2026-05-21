@@ -10,10 +10,20 @@ import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { decodeJWT, ROLE_HOME, AllowedRole } from "@/lib/utils/jwt";
 
+// Open redirect-аас сэргийлнэ — `next` нь зөвхөн ижил host-ын path байх ёстой.
+function safeNext(next: string | null): string {
+  if (!next) return "/";
+  // "//evil.com" эсвэл "/\\evil.com" хэлбэрийг хорино
+  if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/";
+  // Зөвхөн ASCII path char-ыг зөвшөөрнө
+  if (!/^\/[A-Za-z0-9_\-./?&=%#]*$/.test(next)) return "/";
+  return next;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = safeNext(searchParams.get("next"));
 
   // Hash fragment-д алдаа байвал (expired/invalid link)
   const errorCode = searchParams.get("error_code");

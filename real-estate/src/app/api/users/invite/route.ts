@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, isAuthError } from "@/lib/middleware/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/email/resend";
+import { agentInviteTemplate } from "@/lib/email/templates";
 
 export async function POST(req: NextRequest) {
   const auth = await withAuth(req, ["tenant_admin"]);
@@ -74,6 +76,34 @@ export async function POST(req: NextRequest) {
   if (linkErr) {
     // Link үүсгэж чадахгүй ч хэрэглэгч үүссэн — алдааг л мэдэгдэнэ
     return NextResponse.json({ error: linkErr.message }, { status: 500 });
+  }
+
+  // Email-ээр илгээх (fail-soft — алдаа гарвал inline copy fallback хэвээр)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tenantRow } = await (supabaseAdmin as any)
+      .from("tenants")
+      .select("name")
+      .eq("id", auth.tenantId)
+      .maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: inviter } = await (supabaseAdmin as any)
+      .from("users")
+      .select("full_name")
+      .eq("id", auth.userId)
+      .maybeSingle();
+
+    const officeName = tenantRow?.name ?? "Үл хөдлөх оффис";
+    const inviterName = inviter?.full_name ?? "Оффисын админ";
+
+    const tpl = agentInviteTemplate({
+      officeName,
+      inviterName,
+      inviteUrl: linkData.properties.action_link,
+    });
+    await sendEmail({ to: String(email), subject: tpl.subject, html: tpl.html });
+  } catch (err) {
+    console.warn("[invite] email send failed", err);
   }
 
   return NextResponse.json({

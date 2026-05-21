@@ -138,6 +138,12 @@ function LoginForm() {
           >
             {loading ? "Нэвтэрч байна..." : "Нэвтрэх"}
           </button>
+
+          <div className="text-center">
+            <Link href="/auth/forgot-password" className="text-xs text-gray-500 hover:text-indigo-600">
+              Нууц үгээ мартсан уу?
+            </Link>
+          </div>
         </form>
 
         <div className="flex items-center gap-3 my-4">

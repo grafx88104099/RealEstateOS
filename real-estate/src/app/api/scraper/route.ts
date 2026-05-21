@@ -7,6 +7,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { parseUneguiDetailHTML, extractFieldsFromText } from "@/lib/scraper/unegui";
 import { parseListingWithAI } from "@/lib/scraper/ai-parser";
 import { fetchWithBrowser } from "@/lib/scraper/browser";
+import { assertSafePublicUrl } from "@/lib/utils/url-safe";
 
 export async function GET(req: NextRequest) {
   const auth = await withAuth(req, ["super_admin", "tenant_admin"]);
@@ -47,6 +48,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === "parse_url" && body.url) {
+    // SSRF guard — private/loopback хаягруу хандахыг хорино
+    const safe = await assertSafePublicUrl(body.url);
+    if (!safe.ok) {
+      return NextResponse.json({ error: safe.error }, { status: 400 });
+    }
     return await handleParseUrl(body.url, auth.tenantId);
   }
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -6,6 +7,65 @@ import { decodeJWT } from "@/lib/utils/jwt";
 import InquiryForm from "@/components/listings/inquiry-form";
 import { PROPERTY_TYPE_LABELS, LISTING_TYPE_LABELS } from "@/lib/constants/listings";
 import { ListingImageCarousel } from "@/components/listings/listing-image-carousel";
+
+// SEO: per-listing OpenGraph metadata
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: l } = await (supabaseAdmin as any)
+    .from("listings")
+    .select("title, description, price, district, address, property_type")
+    .eq("id", id)
+    .eq("status", "active")
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!l) return { title: "Зар олдсонгүй" };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: img } = await (supabaseAdmin as any)
+    .from("listing_images")
+    .select("url")
+    .eq("listing_id", id)
+    .is("deleted_at", null)
+    .order("is_cover", { ascending: false })
+    .order("sort_order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const priceStr =
+    l.price >= 1_000_000_000
+      ? `${(l.price / 1_000_000_000).toFixed(1)} тэрбум`
+      : l.price >= 1_000_000
+      ? `${(l.price / 1_000_000).toFixed(1)} сая`
+      : l.price.toLocaleString("mn-MN");
+
+  const title = `${l.title} — ₮${priceStr}`;
+  const description =
+    (l.description ?? "").slice(0, 200) ||
+    `${PROPERTY_TYPE_LABELS[l.property_type] ?? ""} ${l.district ?? ""} ${l.address ?? ""}`.trim();
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: img?.url ? [{ url: img.url }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: img?.url ? [img.url] : undefined,
+    },
+  };
+}
 
 function formatPrice(price: number) {
   if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(2)} тэрбум`;

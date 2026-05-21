@@ -17,6 +17,7 @@ import { runScan } from "@/lib/scraper/engine";
 import { ingestNewScraped, type SourceConfig } from "@/lib/scraper/ingest";
 import { SITE_CONFIGS } from "@/lib/scraper/site-configs";
 import { isCapReached, pauseAllSources, DAILY_CAP_USD } from "@/lib/scraper/daily-cap";
+import { safeEqual } from "@/lib/utils/timing-safe";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabaseAdmin = typedAdmin as unknown as SupabaseClient<any, any, any>;
@@ -24,10 +25,11 @@ const supabaseAdmin = typedAdmin as unknown as SupabaseClient<any, any, any>;
 export const maxDuration = 60; // Vercel: cap at 60s for hobby plan
 
 export async function POST(req: NextRequest) {
-  // 1. Bearer auth
+  // 1. Bearer auth (constant-time compare)
   const auth = req.headers.get("authorization") ?? "";
   const secret = process.env.SCRAPER_CRON_SECRET ?? "";
-  if (!secret || auth !== `Bearer ${secret}`) {
+  const expected = `Bearer ${secret}`;
+  if (!secret || !safeEqual(expected, auth)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin as typedAdmin } from "@/lib/supabase/admin";
 import { ingestNewScraped, type SourceConfig } from "@/lib/scraper/ingest";
+import { safeEqual } from "@/lib/utils/timing-safe";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabaseAdmin = typedAdmin as unknown as SupabaseClient<any, any, any>;
@@ -21,7 +22,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   const expected = process.env.INGEST_CALLBACK_TOKEN ?? "";
   const got = req.headers.get("x-worker-token") ?? "";
-  if (!expected || expected !== got) {
+  if (!expected || !safeEqual(expected, got)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

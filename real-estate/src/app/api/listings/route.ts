@@ -117,24 +117,30 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Async embedding — хариу хүлээлгүй
-  embedAndStoreListing(
-    {
-      id: listing.id,
-      title: listing.title,
-      description: listing.description,
-      district: listing.district,
-      address: listing.address,
-      price: listing.price,
-      rooms: listing.rooms,
-      property_type: listing.property_type,
-      area_sqm: listing.area_sqm ? Number(listing.area_sqm) : null,
-      floor: listing.floor,
-      total_floors: listing.total_floors,
-      features: Array.isArray(listing.features) ? listing.features as string[] : [],
-    },
-    supabaseAdmin
-  ).catch((err) => console.error("Embedding failed:", err));
+  // Embedding — Vercel lambda хариу буцаасны дараа freeze хийдэг тул AWAIT хийнэ.
+  // Listing нэмэх хариу ~3-4с удаашрах боловч embedding баталгаатай хадгалагдана.
+  try {
+    await embedAndStoreListing(
+      {
+        id: listing.id,
+        title: listing.title,
+        description: listing.description,
+        district: listing.district,
+        address: listing.address,
+        price: listing.price,
+        rooms: listing.rooms,
+        property_type: listing.property_type,
+        area_sqm: listing.area_sqm ? Number(listing.area_sqm) : null,
+        floor: listing.floor,
+        total_floors: listing.total_floors,
+        features: Array.isArray(listing.features) ? listing.features as string[] : [],
+      },
+      supabaseAdmin,
+    );
+  } catch (err) {
+    // Embedding амжилтгүй ч listing аль хэдийн үүссэн — алдаа л log хийгээд буцаана
+    console.error("Embedding failed:", err);
+  }
 
   return NextResponse.json({ listing }, { status: 201 });
 }

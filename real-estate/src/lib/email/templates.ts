@@ -162,6 +162,64 @@ export function rejectedTemplate(args: {
   return { subject, html };
 }
 
+// 6. Inquiry notification — шинэ inquiry, агентад илгээгдэнэ
+export function inquiryNotificationTemplate(args: {
+  agentName: string;
+  listingTitle: string;
+  buyerName: string;
+  buyerEmail?: string;
+  buyerPhone?: string;
+  message?: string;
+  inquiryUrl: string;
+}) {
+  const subject = sanitizeSubject(`Шинэ хүсэлт: ${args.listingTitle}`);
+  const html = wrap(
+    subject,
+    `
+    <h1 style="font-size:20px;margin:0 0 16px;color:#111827;">Шинэ хүсэлт ирлээ</h1>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 16px;">
+      Сайн байна уу, <strong>${escapeHtml(args.agentName)}</strong>. <strong>${escapeHtml(args.listingTitle)}</strong> зар дээр шинэ харилцагч санал сонирхол илэрхийллээ.
+    </p>
+    <table style="width:100%;font-size:14px;border-collapse:collapse;margin-bottom:20px;">
+      <tr><td style="padding:6px 0;color:#6b7280;width:120px;">Нэр</td><td style="padding:6px 0;font-weight:600;">${escapeHtml(args.buyerName)}</td></tr>
+      ${args.buyerEmail ? `<tr><td style="padding:6px 0;color:#6b7280;">Имэйл</td><td style="padding:6px 0;"><a href="mailto:${escapeHtml(args.buyerEmail)}" style="color:#6366f1;">${escapeHtml(args.buyerEmail)}</a></td></tr>` : ""}
+      ${args.buyerPhone ? `<tr><td style="padding:6px 0;color:#6b7280;">Утас</td><td style="padding:6px 0;"><a href="tel:${escapeHtml(args.buyerPhone)}" style="color:#6366f1;">${escapeHtml(args.buyerPhone)}</a></td></tr>` : ""}
+      ${args.message ? `<tr><td style="padding:6px 0;color:#6b7280;vertical-align:top;">Зурвас</td><td style="padding:6px 0;white-space:pre-wrap;">${escapeHtml(stripUrls(args.message))}</td></tr>` : ""}
+    </table>
+    <div style="text-align:center;margin:24px 0;">
+      ${button(args.inquiryUrl, "Хүсэлтийг харах")}
+    </div>
+    <p style="font-size:12px;color:#9ca3af;margin:0;">Хариу хурдан өгөх нь конверс өндөр байх боломжтой.</p>
+  `,
+  );
+  return { subject, html };
+}
+
+// 7. Agent invite — оффисоос агентад илгээх
+export function agentInviteTemplate(args: {
+  officeName: string;
+  inviterName: string;
+  inviteUrl: string;
+}) {
+  const subject = sanitizeSubject(`${args.officeName} — таныг агентаар урьж байна`);
+  const html = wrap(
+    subject,
+    `
+    <h1 style="font-size:20px;margin:0 0 16px;color:#111827;">Та урилга хүлээж аваллаа</h1>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 20px;">
+      <strong>${escapeHtml(args.inviterName)}</strong> танд <strong>${escapeHtml(args.officeName)}</strong> оффист агентаар нэгдэх урилга илгээлээ.
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      ${button(args.inviteUrl, "Нэгдэх")}
+    </div>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 8px;">Эсвэл доорх холбоосыг хөтчид хуулна уу:</p>
+    <p style="font-size:12px;color:#6366f1;word-break:break-all;margin:0;">${escapeHtml(args.inviteUrl)}</p>
+    <p style="font-size:12px;color:#9ca3af;margin:16px 0 0;">Холбоос 24 цагт хүчинтэй.</p>
+  `,
+  );
+  return { subject, html };
+}
+
 // 5. Super admin notification — шинэ хүсэлт ирлээ
 export function superAdminNotifyTemplate(args: {
   officeName: string;

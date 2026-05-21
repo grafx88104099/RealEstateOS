@@ -19,9 +19,15 @@ export async function withAuth(
 ): Promise<AuthContext | NextResponse> {
   const supabase = await createSupabaseServer();
 
-  const { data: { session }, error } = await supabase.auth.getSession();
+  // getUser() — token-ыг Supabase Auth-руу хүсэлт явуулж баталгаажуулна (getSession() нь cookie уншдаг тул spoof-д өртөмтгий)
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  if (error || !session) {
+  // Session-ийг JWT claim-уудыг авахын тулд авна (custom hook-аар user_role/tenant_id оруулсан)
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -29,7 +35,7 @@ export async function withAuth(
 
   const tenantId = payload.tenant_id as string | undefined;
   const role = payload.user_role as AllowedRole | undefined;
-  const userId = session.user.id;
+  const userId = user.id;
 
   if (!tenantId) {
     return NextResponse.json({ error: "No tenant assigned" }, { status: 403 });

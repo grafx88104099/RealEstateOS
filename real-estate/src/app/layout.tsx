@@ -18,9 +18,30 @@ const onest = Onest({
   weight: ["600", "700", "800"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nemi.mn";
+
 export const metadata: Metadata = {
-  title: "nemi — Үл хөдлөх хөрөнгийн зар",
-  description: "Монгол хэлээр AI хайлттай үл хөдлөх хөрөнгийн зарын платформ",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "nemi — Үл хөдлөх хөрөнгийн зар",
+    template: "%s | nemi",
+  },
+  description: "Монгол хэлээр AI хайлттай үл хөдлөх хөрөнгийн зарын платформ. Орон сууц, хувийн сууц, оффис, газар.",
+  applicationName: "nemi",
+  keywords: ["үл хөдлөх", "орон сууц", "real estate", "Mongolia", "nemi", "зар"],
+  openGraph: {
+    type: "website",
+    locale: "mn_MN",
+    url: SITE_URL,
+    siteName: "nemi",
+    title: "nemi — Үл хөдлөх хөрөнгийн зар",
+    description: "Монгол хэлээр AI хайлттай үл хөдлөх хөрөнгийн зарын платформ",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "nemi — Үл хөдлөх хөрөнгийн зар",
+    description: "Монгол хэлээр AI хайлттай үл хөдлөх хөрөнгийн зарын платформ",
+  },
 };
 
 export default function RootLayout({
@@ -30,7 +51,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="mn"
       className={`${geistSans.variable} ${geistMono.variable} ${onest.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

@@ -75,15 +75,28 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
   updates.updated_at = new Date().toISOString();
 
+  // Optimistic locking — body.version хэрэглэгчээс ирвэл түүгээр concurrency шалгана
+  const clientVersion = typeof body.version === "number" ? body.version : undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (updates as any).version = (clientVersion ?? 0) + 1;
+
   // Agent зөвхөн өөрийн listing-ыг засах боломжтой (нэмэлт хамгаалалт)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q = (supabaseAdmin as any).from("listings").update(updates).eq("id", id).is("deleted_at", null);
+  if (clientVersion !== undefined) q = q.eq("version", clientVersion);
   if (auth.role !== "super_admin") q = q.eq("tenant_id", auth.tenantId);
   if (auth.role === "agent") q = q.eq("agent_id", auth.userId);
 
-  const { data: listing, error } = await q.select().single();
+  const { data: listing, error } = await q.select().maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!listing) {
+    // Версон таарсангүй буюу access-гүй
+    return NextResponse.json(
+      { error: "Зар өөрчлөгдсөн эсвэл засах эрхгүй байна. Хуудсыг сэргээж дахин оролдоно уу." },
+      { status: 409 },
+    );
+  }
 
   // Re-embed засварласан зар
   embedAndStoreListing(
