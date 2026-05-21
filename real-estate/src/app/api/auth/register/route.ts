@@ -184,11 +184,12 @@ export async function POST(req: NextRequest) {
     // Verification token үүсгэх + email илгээх
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    await supabaseAdmin.from("tenant_email_tokens").insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabaseAdmin as any).from("tenant_email_tokens").insert({
       token,
       tenant_id: tenantId,
       expires_at: expiresAt,
-    } as never);
+    });
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nemi.mn";
     const verifyUrl = `${siteUrl}/verify-email?token=${token}`;

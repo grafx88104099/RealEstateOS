@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/verify-email?error=missing`);
   }
 
-  const { data: row } = await supabaseAdmin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: row } = await (supabaseAdmin as any)
     .from("tenant_email_tokens")
     .select("token, tenant_id, expires_at, used_at")
     .eq("token", token)
@@ -34,9 +35,10 @@ export async function GET(req: NextRequest) {
   }
 
   // Token хэрэглэгдсэн гэж тэмдэглэх
-  await supabaseAdmin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabaseAdmin as any)
     .from("tenant_email_tokens")
-    .update({ used_at: new Date().toISOString() } as never)
+    .update({ used_at: new Date().toISOString() })
     .eq("token", token);
 
   // Tenant status шинэчлэх

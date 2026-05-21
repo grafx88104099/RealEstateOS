@@ -39,17 +39,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Имэйл аль хэдийн баталгаажсан байна" }, { status: 400 });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const admin: any = supabaseAdmin;
+
   // Rate limit: сүүлийн token-оос 60 секунд өнгөрсөн эсэх
-  const { data: recent } = await supabaseAdmin
+  const { data: recent } = await admin
     .from("tenant_email_tokens")
     .select("created_at")
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const r = recent as any;
-  if (r && Date.now() - new Date(r.created_at).getTime() < RATE_LIMIT_SECONDS * 1000) {
+  if (recent && Date.now() - new Date(recent.created_at).getTime() < RATE_LIMIT_SECONDS * 1000) {
     return NextResponse.json(
       { error: `Дахин илгээхийг хүлээнэ үү (${RATE_LIMIT_SECONDS} секунд)` },
       { status: 429 },
@@ -57,19 +58,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Хуучин ашиглагдаагүй token-уудыг invalidate (used_at тогтоох — устгахгүй history-д үлдээнэ)
-  await supabaseAdmin
+  await admin
     .from("tenant_email_tokens")
-    .update({ used_at: new Date().toISOString() } as never)
+    .update({ used_at: new Date().toISOString() })
     .eq("tenant_id", tenantId)
     .is("used_at", null);
 
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  await supabaseAdmin.from("tenant_email_tokens").insert({
+  await admin.from("tenant_email_tokens").insert({
     token,
     tenant_id: tenantId,
     expires_at: expiresAt,
-  } as never);
+  });
 
   const { data: owner } = await supabaseAdmin
     .from("users")
