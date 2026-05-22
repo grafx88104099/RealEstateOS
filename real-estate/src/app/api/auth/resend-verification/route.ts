@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
-  const verifyUrl = `${siteUrl}/verify-email?token=${token}`;
+  const verifyUrl = `${siteUrl}/api/auth/verify-email?token=${token}`;
   const tpl = verifyEmailTemplate({
     officeName: t.name,
     ownerName: ow.full_name ?? "",
